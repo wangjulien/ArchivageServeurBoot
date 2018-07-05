@@ -7,10 +7,10 @@ import java.util.Properties;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -23,8 +23,32 @@ import com.atomikos.jdbc.AtomikosDataSourceBean;
 		"com.telino.avp.dao.masterdao" }, entityManagerFactoryRef = "masterEntityManagerFactory", transactionManagerRef = "transactionManager")
 public class AtomikosMasterDataSourceConfig {
 
-	@Autowired
-	private Environment environment;
+	@Value("${spring.masterds.id}")
+    private String masterDsId;
+	
+	@Value("${spring.masterds.driverClassName}")
+    private String masterDsDriver;
+	
+	@Value("${spring.masterds.username}")
+    private String masterDsUser;
+	
+	@Value("${spring.masterds.password}")
+    private String masterDsPsw;
+	
+	@Value("${spring.masterds.host}")
+    private String masterDsHost;
+	
+	@Value("${spring.masterds.port}")
+    private String masterDsPort;
+	
+	@Value("${spring.masterds.db}")
+    private String masterDsDb;
+	
+	@Value("${spring.masterds.pool}")
+    private int masterDsPool;
+	
+	@Value("${hibernate.hbm2ddl.auto}")
+	private String hbm2ddlAuto;
 
 	@Autowired
 	private JpaVendorAdapter jpaVendorAdapter;
@@ -53,16 +77,16 @@ public class AtomikosMasterDataSourceConfig {
 	@Bean
 	public DataSource masterDataSourceOne() {
 		AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
-		ds.setUniqueResourceName(environment.getProperty("spring.masterds.id"));
-		ds.setXaDataSourceClassName(environment.getProperty("spring.masterds.driverClassName"));
+		ds.setUniqueResourceName(masterDsId);
+		ds.setXaDataSourceClassName(masterDsDriver);
 		Properties p = new Properties();
-		p.setProperty("user", environment.getProperty("spring.masterds.username"));
-		p.setProperty("password", environment.getProperty("spring.masterds.password"));
-		p.setProperty("serverName", environment.getProperty("spring.masterds.host"));
-		p.setProperty("portNumber", environment.getProperty("spring.masterds.port"));
-		p.setProperty("databaseName", environment.getProperty("spring.masterds.db"));
+		p.setProperty("user", masterDsUser);
+		p.setProperty("password", masterDsPsw);
+		p.setProperty("serverName", masterDsHost);
+		p.setProperty("portNumber", masterDsPort);
+		p.setProperty("databaseName", masterDsDb);
 		ds.setXaProperties(p);
-		ds.setPoolSize(Integer.valueOf(environment.getProperty("spring.masterds.pool")));
+		ds.setPoolSize(masterDsPool);
 		return ds;
 	}
 	
@@ -102,7 +126,7 @@ public class AtomikosMasterDataSourceConfig {
 
 		// Custom properties can be set using Properties
 		Properties jpaProperties = new Properties();
-		jpaProperties.setProperty("hibernate.hbm2ddl.auto", environment.getProperty("hibernate.hbm2ddl.auto"));
+		jpaProperties.setProperty("hibernate.hbm2ddl.auto", hbm2ddlAuto);
 		jpaProperties.setProperty("hibernate.transaction.jta.platform", AtomikosJtaPlatform.class.getName());
 		jpaProperties.setProperty("javax.persistence.transactionType", "JTA");
 

@@ -33,7 +33,7 @@
 		<repository>
 			<id>in-project</id>
 			<name>In Project Repo</name>
-			<url>file://${project.basedir}/../../localrepository/localrepository/maven-local-repo</url>
+			<url>file://${project.basedir}/../localrepository/localrepository/maven-local-repo</url>
 		</repository>
 
 		<repository>
@@ -43,7 +43,7 @@
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>
 			</snapshots>
-			<url>file://${project.basedir}/../../localrepository/localrepository/localsnapshots</url>
+			<url>file://${project.basedir}/../localrepository/localrepository/localsnapshots</url>
 		</repository>
 
 		<repository>

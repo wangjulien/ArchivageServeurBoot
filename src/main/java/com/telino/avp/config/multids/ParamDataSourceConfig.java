@@ -5,10 +5,10 @@ import java.util.Properties;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -21,8 +21,32 @@ import com.atomikos.jdbc.AtomikosDataSourceBean;
 		"com.telino.avp.dao.paramdao" }, entityManagerFactoryRef = "paramEntityManagerFactory", transactionManagerRef = "transactionManager")
 public class ParamDataSourceConfig {
 
-	@Autowired
-	private Environment environment;
+	@Value("${spring.paramds.id}")
+    private String paramDsId;
+	
+	@Value("${spring.paramds.driverClassName}")
+    private String paramDsDriver;
+	
+	@Value("${spring.paramds.username}")
+    private String paramDsUser;
+	
+	@Value("${spring.paramds.password}")
+    private String paramDsPsw;
+	
+	@Value("${spring.paramds.host}")
+    private String paramDsHost;
+	
+	@Value("${spring.paramds.port}")
+    private String paramDsPort;
+	
+	@Value("${spring.paramds.db}")
+    private String paramDsDb;
+	
+	@Value("${spring.paramds.pool}")
+    private int paramDsPool;
+	
+	@Value("${hibernate.hbm2ddl.auto}")
+	private String hbm2ddlAuto;
 
 	@Autowired
 	private JpaVendorAdapter jpaVendorAdapter;
@@ -30,16 +54,16 @@ public class ParamDataSourceConfig {
 	@Bean
 	public DataSource paramDataSource() {
 		AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
-		ds.setUniqueResourceName(environment.getProperty("spring.paramds.id"));
-		ds.setXaDataSourceClassName(environment.getProperty("spring.paramds.driverClassName"));
+		ds.setUniqueResourceName(paramDsId);
+		ds.setXaDataSourceClassName(paramDsDriver);
 		Properties p = new Properties();
-		p.setProperty("user", environment.getProperty("spring.paramds.username"));
-		p.setProperty("password", environment.getProperty("spring.paramds.password"));
-		p.setProperty("serverName", environment.getProperty("spring.paramds.host"));
-		p.setProperty("portNumber", environment.getProperty("spring.paramds.port"));
-		p.setProperty("databaseName", environment.getProperty("spring.paramds.db"));
+		p.setProperty("user", paramDsUser);
+		p.setProperty("password", paramDsPsw);
+		p.setProperty("serverName", paramDsHost);
+		p.setProperty("portNumber", paramDsPort);
+		p.setProperty("databaseName", paramDsDb);
 		ds.setXaProperties(p);
-		ds.setPoolSize(Integer.valueOf(environment.getProperty("spring.paramds.pool")));
+		ds.setPoolSize(paramDsPool);
 		return ds;
 	}
 
@@ -62,7 +86,7 @@ public class ParamDataSourceConfig {
 
 		// Custom properties can be set using Properties
 		Properties jpaProperties = new Properties();
-		jpaProperties.setProperty("hibernate.hbm2ddl.auto", environment.getProperty("hibernate.hbm2ddl.auto"));
+		jpaProperties.setProperty("hibernate.hbm2ddl.auto", hbm2ddlAuto);
 		jpaProperties.setProperty("hibernate.transaction.jta.platform", AtomikosJtaPlatform.class.getName());
 		jpaProperties.setProperty("javax.persistence.transactionType", "JTA");
 

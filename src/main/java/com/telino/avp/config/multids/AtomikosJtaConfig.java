@@ -4,13 +4,12 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import javax.transaction.UserTransaction;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.core.env.Environment;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.vendor.Database;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
@@ -25,8 +24,9 @@ import com.atomikos.icatch.jta.UserTransactionManager;
 @EnableTransactionManagement
 @Import({ AtomikosMasterDataSourceConfig.class, AtomikosMirrorDataSourceConfig.class, ParamDataSourceConfig.class })
 public class AtomikosJtaConfig {
-	@Autowired
-	private Environment environment;
+	
+	@Value("${hibernate.show_sql}")
+    private boolean showSql;
 
 	@Bean
 	public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
@@ -42,7 +42,7 @@ public class AtomikosJtaConfig {
 		jpaVendorAdapter.setDatabase(Database.POSTGRESQL);
 
 		// setting this will show SQLS on logs
-		jpaVendorAdapter.setShowSql(Boolean.valueOf(environment.getProperty("hibernate.show_sql")));
+		jpaVendorAdapter.setShowSql(showSql);
 
 		return jpaVendorAdapter;
 	}

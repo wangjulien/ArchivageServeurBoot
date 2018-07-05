@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -18,8 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
-import javax.persistence.EntityNotFoundException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,7 @@ public class ScheduledArchivageAnalysis {
 	private static final String USER_ID = "system";
 	private static final String APP_VERSION = "1";
 	private static final int MAX_CHECK_FILES_THREAD = 5;
-
+	
 	private static final String DEFAULT_AUTORC_SERVLET_URL = "http://localhost:8087/automateRC/AutomateServiceServlet";
 	private static final int HOURS_BETWEEN_INTERGITY_CHECK = 24;
 
@@ -279,15 +278,15 @@ public class ScheduledArchivageAnalysis {
 	 * @return
 	 */
 	private boolean toSealLogArchive() {
-
-		LogArchive logArchive = null;
 		boolean sealedLogLessOneHour = false;
 
-		try {
-			logArchive = logArchiveDao.getLastSealedLog();
+		Optional<LogArchive> logArchiveOpt = logArchiveDao.getLastSealedLog();
+		if (logArchiveOpt.isPresent()) {
+
 			// Is there a LogArchive done less than 1 hour?
-			sealedLogLessOneHour = logArchive.getHorodatage().isBefore(ZonedDateTime.now().minus(1, ChronoUnit.HOURS));
-		} catch (EntityNotFoundException e) {
+			sealedLogLessOneHour = logArchiveOpt.get().getHorodatage()
+					.isBefore(ZonedDateTime.now().minus(1, ChronoUnit.HOURS));
+		} else {
 			sealedLogLessOneHour = true;
 		}
 
@@ -295,8 +294,8 @@ public class ScheduledArchivageAnalysis {
 		if ((nowTime.isBefore(LocalTime.of(23, 59)) && nowTime.isAfter(LocalTime.of(23, 00))) || sealedLogLessOneHour) {
 			return true;
 		} else {
-			if (Objects.nonNull(logArchive))
-				LOGGER.info("Scellement du journal existe déjà : logid = " + logArchive.getLogId());
+			if (logArchiveOpt.isPresent())
+				LOGGER.info("Scellement du journal existe déjà : logid = " + logArchiveOpt.get().getLogId());
 			return false;
 		}
 	}
@@ -307,14 +306,15 @@ public class ScheduledArchivageAnalysis {
 	 * @return
 	 */
 	private boolean toSealLogEvent() {
-
-		LogEvent logEvent = null;
 		boolean sealedLogLessOneHour = false;
-		try {
-			logEvent = logEventDao.getLastSealedLog();
+
+		Optional<LogEvent> logEventOpt = logEventDao.getLastSealedLog();
+		if (logEventOpt.isPresent()) {
+
 			// Is there a LogArchive done less than 1 hour?
-			sealedLogLessOneHour = logEvent.getHorodatage().isBefore(ZonedDateTime.now().minus(1, ChronoUnit.HOURS));
-		} catch (EntityNotFoundException e) {
+			sealedLogLessOneHour = logEventOpt.get().getHorodatage()
+					.isBefore(ZonedDateTime.now().minus(1, ChronoUnit.HOURS));
+		} else {
 			sealedLogLessOneHour = true;
 		}
 
@@ -322,8 +322,8 @@ public class ScheduledArchivageAnalysis {
 		if ((nowTime.isBefore(LocalTime.of(23, 59)) && nowTime.isAfter(LocalTime.of(23, 00))) || sealedLogLessOneHour) {
 			return true;
 		} else {
-			if (Objects.nonNull(logEvent))
-				LOGGER.info("Scellement du journal existe déjà : logid = " + logEvent.getLogId());
+			if (logEventOpt.isPresent())
+				LOGGER.info("Scellement du journal existe déjà : logid = " + logEventOpt.get().getLogId());
 			return false;
 		}
 	}

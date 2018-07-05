@@ -3,6 +3,7 @@ package com.telino.avp.dao;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.persistence.EntityNotFoundException;
@@ -116,8 +117,7 @@ public class LogEventDao {
 	 * 
 	 * @return
 	 */
-	public LogEvent getLastSealedLog() {
-		return masterLogEventRepository.findTopByLogTypeOrderByTimestampDesc(LogEventType.S.toString())
-				.orElseThrow(EntityNotFoundException::new);
+	public Optional<LogEvent> getLastSealedLog() {
+		return masterLogEventRepository.findTopByLogTypeOrderByTimestampDesc(LogEventType.S.toString());
 	}
 }

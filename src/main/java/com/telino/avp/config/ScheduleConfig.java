@@ -45,7 +45,7 @@ public class ScheduleConfig implements SchedulingConfigurer {
 	@Bean(destroyMethod = "shutdown")
 	public ThreadPoolTaskScheduler taskScheduler() {
 		final ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-		threadPoolTaskScheduler.setPoolSize(2);
+		threadPoolTaskScheduler.setPoolSize(5);
 		threadPoolTaskScheduler.setThreadNamePrefix("ScheduledTask-");
 		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(false);
 		threadPoolTaskScheduler.initialize();
@@ -55,8 +55,8 @@ public class ScheduleConfig implements SchedulingConfigurer {
 
 		// Associate a identity with each scheduled task
 		for (SystEnv env : systEnvs) {
-			ScheduledFuture<?> future = threadPoolTaskScheduler.scheduleAtFixedRate(
-					() -> scheduledArchivageAnalysis.launchBackgroudServices(env.getNombase()), cycleRate);
+			ScheduledFuture<?> future = threadPoolTaskScheduler.scheduleWithFixedDelay(
+					() -> scheduledArchivageAnalysis.launchBackgroudServices(env.getNombase()), cycleRate * 60 * 1000);
 			CTE.put(env.getNombase(), future);
 		}
 

@@ -4,6 +4,7 @@ import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -149,8 +150,7 @@ public class LogArchiveDao {
 	 * 
 	 * @return
 	 */
-	public LogArchive getLastSealedLog() {
-		return masterLogArchiveRepository.findTopByLogTypeOrderByTimestampDesc(LogArchiveType.S.toString())
-				.orElseThrow(EntityNotFoundException::new);
+	public Optional<LogArchive> getLastSealedLog() {
+		return masterLogArchiveRepository.findTopByLogTypeOrderByTimestampDesc(LogArchiveType.S.toString());
 	}
 }

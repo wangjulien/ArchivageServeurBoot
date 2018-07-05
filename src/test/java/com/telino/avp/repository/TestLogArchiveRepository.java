@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.persistence.EntityNotFoundException;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -137,7 +139,7 @@ public class TestLogArchiveRepository {
 
 	@Test
 	public void get_last_sealed_log() {
-		LogArchive logArchive = logArchiveDao.getLastSealedLog();
+		LogArchive logArchive = logArchiveDao.getLastSealedLog().orElseThrow(EntityNotFoundException::new);
 
 		assertEquals(logArchive.getLogId(), logArchiveS.getLogId());
 
