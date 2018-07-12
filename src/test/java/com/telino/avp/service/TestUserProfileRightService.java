@@ -19,7 +19,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import com.telino.avp.dao.ProfileDao;
 import com.telino.avp.dao.UserDao;
@@ -34,7 +34,7 @@ import com.telino.avp.service.archivage.UserProfileRightService;
 import com.telino.avp.tools.ServerProc;
 
 @RunWith(MockitoJUnitRunner.class)
-@SpringJUnitConfig(ConfigTestService.class)
+@SpringBootTest
 public class TestUserProfileRightService {
 
 	private static final Integer PROFILE_ID = -20;

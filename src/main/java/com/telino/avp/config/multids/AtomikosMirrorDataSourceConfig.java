@@ -12,10 +12,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
 import com.atomikos.jdbc.AtomikosDataSourceBean;
+import com.telino.avp.config.multids.DataSourceConfig.DsConfigObject;
 
 @Configuration
 @DependsOn("transactionManager")
@@ -23,36 +24,12 @@ import com.atomikos.jdbc.AtomikosDataSourceBean;
 		"com.telino.avp.dao.mirrordao" }, entityManagerFactoryRef = "mirrorEntityManagerFactory", transactionManagerRef = "transactionManager")
 public class AtomikosMirrorDataSourceConfig {
 
-	@Value("${spring.mirrords.id}")
-    private String mirrorDsId;
-	
-	@Value("${spring.mirrords.driverClassName}")
-    private String mirrorDsDriver;
-	
-	@Value("${spring.mirrords.username}")
-    private String mirrorDsUser;
-	
-	@Value("${spring.mirrords.password}")
-    private String mirrorDsPsw;
-	
-	@Value("${spring.mirrords.host}")
-    private String mirrorDsHost;
-	
-	@Value("${spring.mirrords.port}")
-    private String mirrorDsPort;
-	
-	@Value("${spring.mirrords.db}")
-    private String mirrorDsDb;
-	
-	@Value("${spring.mirrords.pool}")
-    private int mirrorDsPool;
-	
-	@Value("${hibernate.hbm2ddl.auto}")
+	@Value("${spring.jpa.hibernate.ddl-auto}")
 	private String hbm2ddlAuto;
 
 	@Autowired
-	private JpaVendorAdapter jpaVendorAdapter;
-	
+	private DataSourceConfig dataSourceConfig;
+
 	/**
 	 * Dynamic routing DataSource
 	 * 
@@ -61,50 +38,36 @@ public class AtomikosMirrorDataSourceConfig {
 	@Bean
 	public DataSource mirrorDynamicDs() {
 		Map<Object, Object> targetDataSources = new HashMap<>();
-		
-		// Load potential DS
-		DataSource mirrorDataSourceOne = mirrorDataSourceOne();
-//		DataSource mirrorDataSourceTwo = mirrorDataSourceTwo();
-		targetDataSources.put(((AtomikosDataSourceBean)mirrorDataSourceOne).getUniqueResourceName(), mirrorDataSourceOne);
-//		targetDataSources.put(((AtomikosDataSourceBean)mirrorDataSourceTwo).getUniqueResourceName(), mirrorDataSourceTwo);
 
 		MirrorDataSourceRouter avpDataSourceRouter = new MirrorDataSourceRouter();
+		// Load potential DS
+		for (DsConfigObject dsConfigObject : dataSourceConfig.getDsConfigList()) {
+
+			// For convention, mirror DS ends with _M
+			if (!dsConfigObject.getId().endsWith("_M") || dsConfigObject.getId().contains("AVPNAV"))
+				continue;
+
+			// Read Datasource configuration
+			AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
+			ds.setUniqueResourceName(dsConfigObject.getId());
+			ds.setXaDataSourceClassName(dsConfigObject.getDriverClassName());
+			Properties p = new Properties();
+			p.setProperty("user", dsConfigObject.getUsername());
+			p.setProperty("password", dsConfigObject.getPassword());
+			p.setProperty("serverName", dsConfigObject.getHost());
+			p.setProperty("portNumber", dsConfigObject.getPort());
+			p.setProperty("databaseName", dsConfigObject.getDb());
+			ds.setXaProperties(p);
+			ds.setPoolSize(dsConfigObject.getPool());
+
+			targetDataSources.put(dsConfigObject.getId(), ds);
+
+			avpDataSourceRouter.setDefaultTargetDataSource(ds);
+		}
+
 		avpDataSourceRouter.setTargetDataSources(targetDataSources);
-		avpDataSourceRouter.setDefaultTargetDataSource(mirrorDataSourceOne);
 		return avpDataSourceRouter;
 	}
-
-	@Bean
-	public DataSource mirrorDataSourceOne() {
-		AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
-		ds.setUniqueResourceName(mirrorDsId);
-		ds.setXaDataSourceClassName(mirrorDsDriver);
-		Properties p = new Properties();
-		p.setProperty("user", mirrorDsUser);
-		p.setProperty("password", mirrorDsPsw);
-		p.setProperty("serverName", mirrorDsHost);
-		p.setProperty("portNumber", mirrorDsPort);
-		p.setProperty("databaseName", mirrorDsDb);
-		ds.setXaProperties(p);
-		ds.setPoolSize(mirrorDsPool);
-		return ds;
-	}
-	
-//	@Bean
-//	public DataSource mirrorDataSourceTwo() {
-//		AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
-//		ds.setUniqueResourceName("AVP_JULY_M");
-//		ds.setXaDataSourceClassName(environment.getProperty("spring.mirrords.driverClassName"));
-//		Properties p = new Properties();
-//		p.setProperty("user", environment.getProperty("spring.mirrords.username"));
-//		p.setProperty("password", environment.getProperty("spring.mirrords.password"));
-//		p.setProperty("serverName", environment.getProperty("spring.mirrords.host"));
-//		p.setProperty("portNumber", environment.getProperty("spring.mirrords.port"));
-//		p.setProperty("databaseName", "avp_july_m");
-//		ds.setXaProperties(p);
-//		ds.setPoolSize(Integer.valueOf(environment.getProperty("spring.mirrords.pool")));
-//		return ds;
-//	}
 
 	@Bean
 	public LocalContainerEntityManagerFactoryBean mirrorEntityManagerFactory() {
@@ -117,7 +80,7 @@ public class AtomikosMirrorDataSourceConfig {
 
 		// Java Config Dependency injection is provided here by setting JPA Vendor
 		// Adapter (Hibernate)
-		entityManagerFactory.setJpaVendorAdapter(jpaVendorAdapter);
+		entityManagerFactory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
 		// Entity Manager Factory will scan packages in order to find entities (@Entity)
 		entityManagerFactory.setPackagesToScan("com.telino.avp.entity");

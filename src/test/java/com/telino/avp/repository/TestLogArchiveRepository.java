@@ -18,10 +18,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.telino.avp.TestConstants;
 import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.LogArchiveDao;
 import com.telino.avp.dao.mirrordao.MirrorLogArchiveRepository;
@@ -36,8 +37,8 @@ import com.telino.avp.protocol.DbEntityProtocol.LogArchiveType;
  * @author jwang
  *
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = { ConfigTestRepository.class })
+@RunWith(SpringRunner.class)
+@SpringBootTest
 @Transactional
 public class TestLogArchiveRepository {
 
@@ -58,7 +59,7 @@ public class TestLogArchiveRepository {
 	public void buildEntity() {
 
 		Document archive = new Document();
-		archive.setDocId(ConfigTestRepository.TEST_DOC_ID);
+		archive.setDocId(TestConstants.TEST_DOC_ID);
 
 		documentDao.saveMetaDonneesDocument(archive);
 
@@ -66,7 +67,7 @@ public class TestLogArchiveRepository {
 		logArchiveA = new LogArchive();
 		logArchiveA.setLogId(UUID.randomUUID());
 		logArchiveA.setDocument(archive);
-		logArchiveA.setHash(ConfigTestRepository.TEST_HASH);
+		logArchiveA.setHash(TestConstants.TEST_HASH);
 		logArchiveA.setLogType(LogArchiveType.A.toString());
 
 		// Log de scellement de journaux
@@ -80,7 +81,7 @@ public class TestLogArchiveRepository {
 		logArchiveAfter = new LogArchive();
 		logArchiveAfter.setLogId(UUID.randomUUID());
 		logArchiveAfter.setDocument(null);
-		logArchiveAfter.setHash(ConfigTestRepository.TEST_HASH);
+		logArchiveAfter.setHash(TestConstants.TEST_HASH);
 		logArchiveAfter.setLogType(LogArchiveType.A.toString());
 
 		// Persister dans les deux bases
@@ -101,19 +102,19 @@ public class TestLogArchiveRepository {
 	@Test
 	public void find_hash_for_doc() {
 		// Verifier le findHash
-		assertEquals(logArchiveDao.findHashForDocId(ConfigTestRepository.TEST_DOC_ID, false),
-				ConfigTestRepository.TEST_HASH);
-		assertEquals(logArchiveDao.findHashForDocId(ConfigTestRepository.TEST_DOC_ID, true),
-				ConfigTestRepository.TEST_HASH);
+		assertEquals(logArchiveDao.findHashForDocId(TestConstants.TEST_DOC_ID, false),
+				TestConstants.TEST_HASH);
+		assertEquals(logArchiveDao.findHashForDocId(TestConstants.TEST_DOC_ID, true),
+				TestConstants.TEST_HASH);
 
 	}
 
 	@Test
 	public void find_seal_log_archive_for_doc() {
 		// Verifier le findHash
-		assertEquals(logArchiveDao.findLogArchiveForDocId(ConfigTestRepository.TEST_DOC_ID, false).getLogId(),
+		assertEquals(logArchiveDao.findLogArchiveForDocId(TestConstants.TEST_DOC_ID, false).getLogId(),
 				logArchiveS.getLogId());
-		assertEquals(logArchiveDao.findLogArchiveForDocId(ConfigTestRepository.TEST_DOC_ID, true).getLogId(),
+		assertEquals(logArchiveDao.findLogArchiveForDocId(TestConstants.TEST_DOC_ID, true).getLogId(),
 				logArchiveS.getLogId());
 
 	}

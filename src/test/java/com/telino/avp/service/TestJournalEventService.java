@@ -23,8 +23,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 
+import com.telino.avp.TestConstants;
 import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.LogArchiveDao;
 import com.telino.avp.dao.LogEventDao;
@@ -37,7 +38,7 @@ import com.telino.avp.service.storage.AbstractStorageService;
 import com.telino.avp.utils.Sha;
 
 @RunWith(MockitoJUnitRunner.class)
-@SpringJUnitConfig(ConfigTestService.class)
+@SpringBootTest
 public class TestJournalEventService {
 
 	@InjectMocks
@@ -70,7 +71,7 @@ public class TestJournalEventService {
 		logEventBefore.setHorodatage(ZonedDateTime.now());
 
 		logEvent = new LogEvent();
-		logEvent.setLogId(ConfigTestService.LOG_EVENT_ID);
+		logEvent.setLogId(TestConstants.LOG_EVENT_ID);
 		logEvent.setContenu(logEventBefore.buildContent());
 		logEvent.setHash(Sha.encode(logEvent.getContenu(), "utf-8"));
 
@@ -82,12 +83,12 @@ public class TestJournalEventService {
 	public void verify_journal() throws AvpExploitException, TSPValidationException, OperatorCreationException,
 			TSPException, CMSException, IOException {
 
-		when(logEventDao.findAllLogEventBeforeLogIdForContent(eq(ConfigTestService.LOG_EVENT_ID), anyBoolean()))
+		when(logEventDao.findAllLogEventBeforeLogIdForContent(eq(TestConstants.LOG_EVENT_ID), anyBoolean()))
 				.thenReturn(Arrays.asList(logEventBefore));
 
 		journalEventService.verifyJournal(logEvent, false);
 
-		verify(logEventDao, times(2)).findAllLogEventBeforeLogIdForContent(eq(ConfigTestService.LOG_EVENT_ID),
+		verify(logEventDao, times(2)).findAllLogEventBeforeLogIdForContent(eq(TestConstants.LOG_EVENT_ID),
 				anyBoolean());
 		verify(tamponHorodatageService).initTamponHorodatage(logEvent);
 		verify(tamponHorodatageService).verifyTamponHorodatage(logEvent);
@@ -98,7 +99,7 @@ public class TestJournalEventService {
 		Document journalXml = new Document();
 		
 		when(logEventDao.save(any(LogEvent.class))).thenReturn(logEvent);
-		when(logEventDao.findAllLogEventBeforeLogIdForContent(eq(ConfigTestService.LOG_EVENT_ID), anyBoolean()))
+		when(logEventDao.findAllLogEventBeforeLogIdForContent(eq(TestConstants.LOG_EVENT_ID), anyBoolean()))
 		.thenReturn(Arrays.asList(logEventBefore));
 		when(storageService.archive(journalEventService, logEvent)).thenReturn(journalXml);
 		
@@ -106,19 +107,19 @@ public class TestJournalEventService {
 		
 		assertNotNull(logEvent.getTimestampTokenBytes());
 		
-		verify(logEventDao).findAllLogEventBeforeLogIdForContent(eq(ConfigTestService.LOG_EVENT_ID),
+		verify(logEventDao).findAllLogEventBeforeLogIdForContent(eq(TestConstants.LOG_EVENT_ID),
 				anyBoolean());
 		verify(logEventDao, times(2)).save(any(LogEvent.class));
 	}
 
 	@Test
 	public void build_storage_format() throws AvpExploitException {
-		when(logEventDao.findAllLogEventBeforeLogIdForContent(eq(ConfigTestService.LOG_EVENT_ID), anyBoolean()))
+		when(logEventDao.findAllLogEventBeforeLogIdForContent(eq(TestConstants.LOG_EVENT_ID), anyBoolean()))
 				.thenReturn(Arrays.asList(logEventBefore));
 
 		journalEventService.buildStorageFormat(logEvent);
 
-		verify(logEventDao).findAllLogEventBeforeLogIdForContent(eq(ConfigTestService.LOG_EVENT_ID), anyBoolean());
+		verify(logEventDao).findAllLogEventBeforeLogIdForContent(eq(TestConstants.LOG_EVENT_ID), anyBoolean());
 
 	}
 

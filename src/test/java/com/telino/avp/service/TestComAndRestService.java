@@ -17,8 +17,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 
+import com.telino.avp.TestConstants;
 import com.telino.avp.dao.CommunicationDao;
 import com.telino.avp.dao.RestitutionDao;
 import com.telino.avp.entity.archive.Communication;
@@ -29,14 +30,13 @@ import com.telino.avp.entity.archive.Restitution;
 import com.telino.avp.entity.archive.RestitutionList;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.DbEntityProtocol.CommunicationState;
-import com.telino.avp.repository.ConfigTestRepository;
 import com.telino.avp.service.archivage.ComAndRestService;
 import com.telino.avp.service.archivage.DocumentService;
 import com.telino.avp.service.journal.JournalArchiveService;
 import com.telino.avp.service.storage.AbstractStorageService;
 
 @RunWith(MockitoJUnitRunner.class)
-@SpringJUnitConfig(ConfigTestService.class)
+@SpringBootTest
 public class TestComAndRestService {
 
 	private static final UUID COM_ID = UUID.randomUUID();
@@ -82,7 +82,7 @@ public class TestComAndRestService {
 		empreinte.setEmpreinte("TEST EMPREINTE");
 
 		doc = new Document();
-		doc.setDocId(ConfigTestRepository.TEST_DOC_ID);
+		doc.setDocId(TestConstants.TEST_DOC_ID);
 		doc.setTitle("TestTitle.pdf");
 		doc.setContent("This is a test".getBytes());
 		doc.setEmpreinte(empreinte);
@@ -103,7 +103,7 @@ public class TestComAndRestService {
 		when(communicationDao.findByComId(COM_ID)).thenReturn(communication);
 		when(restitutionDao.findByRestId(REST_ID)).thenReturn(restitution);
 		
-		when(storageService.get(ConfigTestRepository.TEST_DOC_ID)).thenReturn(doc);
+		when(storageService.get(TestConstants.TEST_DOC_ID)).thenReturn(doc);
 		when(storageService.archive(anyString(), eq(doc))).thenReturn(attestation);
 		when(storageService.get(attestation.getDocId())).thenReturn(attestation);
 	}
@@ -123,7 +123,7 @@ public class TestComAndRestService {
 
 		// The daos are called correctly
 		verify(communicationDao).findByComId(COM_ID);
-		verify(storageService).get(ConfigTestRepository.TEST_DOC_ID);
+		verify(storageService).get(TestConstants.TEST_DOC_ID);
 		verify(storageService).archive(anyString(), eq(doc));
 		verify(storageService).get(attestation.getDocId());
 		verify(documentService).control(any(Map.class));
@@ -146,7 +146,7 @@ public class TestComAndRestService {
 
 		// The daos are called correctly
 		verify(restitutionDao).findByRestId(REST_ID);
-		verify(storageService).get(ConfigTestRepository.TEST_DOC_ID);
+		verify(storageService).get(TestConstants.TEST_DOC_ID);
 		verify(storageService).archive(anyString(), eq(doc));
 		verify(storageService).get(attestation.getDocId());
 		verify(documentService).control(any(Map.class));

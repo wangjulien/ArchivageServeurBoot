@@ -1,0 +1,87 @@
+server:
+  port: 8087
+  servlet:
+    context-path: /
+  tomcat:
+    accesslog:
+      enabled: true
+    basedir: ./tomcat
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+        
+spring:
+  main:
+    banner-mode: 'off'
+  jpa:
+    database: POSTGRESQL
+    database-platform: org.hibernate.dialect.PostgreSQL95Dialect
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+  dsConfigList:
+    - 
+      id: AVPNAV
+      driverClassName: org.postgresql.xa.PGXADataSource
+      host: 192.168.4.7
+      port: 5432
+      db: avpnav
+      username: cdms
+      password: cdms123!
+      pool: 5
+    - 
+      id: AVP_JW
+      driverClassName: org.postgresql.xa.PGXADataSource
+      host: 192.168.4.7
+      port: 5432
+      db: avp_jw
+      username: cdms
+      password: cdms123!
+      pool: 5
+    - 
+      id: AVP_JW_M
+      driverClassName: org.postgresql.xa.PGXADataSource
+      host: 192.168.4.7
+      port: 5432
+      db: avp_jw_m
+      username: cdms
+      password: cdms123!
+      pool: 5
+#    - 
+#      id: AVP_JULY
+#      driverClassName: org.postgresql.xa.PGXADataSource
+#      host: 192.168.4.7
+#      port: 5432
+#      db: avp_july
+#      username: cdms
+#      password: cdms123!
+#      pool: 5
+#    - 
+#      id: AVP_JULY_M
+#      driverClassName: org.postgresql.xa.PGXADataSource
+#      host: 192.168.4.7
+#      port: 5432
+#      db: avp_july_m
+#      username: cdms
+#      password: cdms123!
+#      pool: 5
+
+
+app: 
+  archivageserveur: 
+    url: http://localhost:8080/archivageserveur/ArchivageService
+# cron expression of filling task rate (every minute)
+  fillingTaskRate:
+    cronexp: 0 0/10 * 1/1 * ?
+# cron expression of exploitqtion task rate (every 10 minutes)
+  exploitationTaskRate:
+    cronexp: 0 0/10 * 1/1 * ?
+# Maximum checkfiles thread = nb of http request
+  exptask:
+    max-thread-pool: 5
+# Backgroud service (in minute)
+  threadanalysis: 
+    cycletime: 1

@@ -58,7 +58,7 @@ public class ScheduledArchivageAnalysis {
 	private static final String DEFAULT_AUTORC_SERVLET_URL = "http://localhost:8087/automateRC/AutomateServiceServlet";
 	private static final int HOURS_BETWEEN_INTERGITY_CHECK = 24;
 
-	@Value("${archivageserveur.url}")
+	@Value("${app.archivageserveur.url}")
 	private String avpServletUrl;
 
 	private final String process;

@@ -36,10 +36,11 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.telino.avp.TestConstants;
 import com.telino.avp.dao.DepotDao;
 import com.telino.avp.dao.DocTypeDao;
 import com.telino.avp.dao.DocumentDao;
@@ -59,7 +60,6 @@ import com.telino.avp.entity.context.User;
 import com.telino.avp.entity.param.Param;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
-import com.telino.avp.repository.ConfigTestRepository;
 import com.telino.avp.service.archivage.DocumentService;
 import com.telino.avp.service.archivage.UserProfileRightService;
 import com.telino.avp.service.journal.EntiretyCheckResultLogger;
@@ -71,7 +71,7 @@ import com.telino.avp.tools.RemoteCall;
 import CdmsApi.client.SqlInfo;
 
 @RunWith(MockitoJUnitRunner.class)
-@SpringJUnitConfig(ConfigTestService.class)
+@SpringBootTest
 public class TestDocumentService {
 
 	private static final Integer PROFILE_ID = -20;
@@ -136,18 +136,18 @@ public class TestDocumentService {
 	@Test(expected = AvpExploitException.class)
 	public void control() throws AvpExploitException {
 		input.clear();
-		input.put("docid", ConfigTestRepository.TEST_DOC_ID.toString());
+		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 
 		// All goes well
-		when(storageService.check(ConfigTestRepository.TEST_DOC_ID, false)).thenReturn(true);
-		when(documentDao.get(ConfigTestRepository.TEST_DOC_ID, false)).thenReturn(new Document());
+		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(true);
+		when(documentDao.get(TestConstants.TEST_DOC_ID, false)).thenReturn(new Document());
 
 		documentService.control(input);
 
 		verify(journalArchiveService).log(anyMap());
 
 		// If Check file by Storage goes wrong
-		when(storageService.check(ConfigTestRepository.TEST_DOC_ID, false)).thenReturn(false);
+		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(false);
 		documentService.control(input);
 	}
 
@@ -172,13 +172,13 @@ public class TestDocumentService {
 		ZonedDateTime newEndDate = nowFixed.plus(1, ChronoUnit.MONTHS);
 
 		input.clear();
-		input.put("docid", ConfigTestRepository.TEST_DOC_ID.toString());
+		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 		input.put("user", USER_ID);
 		input.put("archive_end", newEndDate.toString());
 
 		// When achievement end date is smaller than minimum conserved date
 		Document document = new Document();
-		document.setDocId(ConfigTestRepository.TEST_DOC_ID);
+		document.setDocId(TestConstants.TEST_DOC_ID);
 		document.setArchiveDate(nowFixed);
 		document.setArchiveEnd(nowFixed);
 		Profile profile = new Profile();
@@ -186,7 +186,7 @@ public class TestDocumentService {
 		profile.setParConversation(5); // minimum keep for 5 monthes
 		document.setProfile(profile);
 
-		when(documentDao.get(ConfigTestRepository.TEST_DOC_ID, false)).thenReturn(document);
+		when(documentDao.get(TestConstants.TEST_DOC_ID, false)).thenReturn(document);
 		when(userProfileRightService.canDoThePredict(eq(1), eq(USER_ID), any())).thenReturn(true);
 
 		final Map<String, Object> resultat = new HashMap<>();
@@ -211,7 +211,7 @@ public class TestDocumentService {
 	@Test
 	public void delete() throws AvpExploitException, ClassNotFoundException, IOException {
 		Document document = new Document();
-		document.setDocId(ConfigTestRepository.TEST_DOC_ID);
+		document.setDocId(TestConstants.TEST_DOC_ID);
 		document.setTitle("TestTitle");
 		document.setElasticid("Test elastic ID"); // This decides whether noGED or not
 		Profile profile = new Profile();
@@ -265,7 +265,7 @@ public class TestDocumentService {
 	public void get() throws AvpExploitException {
 		Empreinte empreinte = new Empreinte();
 		Document document = new Document();
-		document.setDocId(ConfigTestRepository.TEST_DOC_ID);
+		document.setDocId(TestConstants.TEST_DOC_ID);
 		document.setTitle("TestTitle");
 		document.setContent("Test content".getBytes());
 		document.setContentLength(1);
@@ -276,36 +276,36 @@ public class TestDocumentService {
 		document.setProfile(profile);
 
 		input.clear();
-		input.put("docid", ConfigTestRepository.TEST_DOC_ID.toString());
+		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 		input.put("user", USER_ID);
 		input.put("base64", "true");
 
-		when(documentDao.get(ConfigTestRepository.TEST_DOC_ID, false)).thenReturn(document);
+		when(documentDao.get(TestConstants.TEST_DOC_ID, false)).thenReturn(document);
 		when(userProfileRightService.canDoThePredict(eq(1), eq(USER_ID), any())).thenReturn(true);
-		when(storageService.get(ConfigTestRepository.TEST_DOC_ID)).thenReturn(document);
+		when(storageService.get(TestConstants.TEST_DOC_ID)).thenReturn(document);
 
 		final Map<String, Object> resultat = new HashMap<>();
 		documentService.get(input, resultat);
 
 		assertEquals(Base64.getEncoder().encodeToString("Test content".getBytes()), (String) resultat.get("content"));
 
-		verify(storageService).get(ConfigTestRepository.TEST_DOC_ID);
+		verify(storageService).get(TestConstants.TEST_DOC_ID);
 		verify(journalArchiveService).log(anyMap());
 	}
 
 	@Test
 	public void get_info() {
 		Document document = new Document();
-		document.setDocId(ConfigTestRepository.TEST_DOC_ID);
+		document.setDocId(TestConstants.TEST_DOC_ID);
 
-		when(documentDao.get(ConfigTestRepository.TEST_DOC_ID, false)).thenReturn(document);
+		when(documentDao.get(TestConstants.TEST_DOC_ID, false)).thenReturn(document);
 
 		input.clear();
-		input.put("docid", ConfigTestRepository.TEST_DOC_ID.toString());
+		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 		final Map<String, Object> resultat = new HashMap<>();
 		documentService.getInfo(input, resultat);
 
-		assertEquals(ConfigTestRepository.TEST_DOC_ID.toString(), (String) resultat.get("docid"));
+		assertEquals(TestConstants.TEST_DOC_ID.toString(), (String) resultat.get("docid"));
 	}
 
 	@Test
@@ -480,7 +480,7 @@ public class TestDocumentService {
 		when(remoteCall.callServlet(anyMap(), anyString(), anyString())).thenReturn(output);
 		doAnswer(invocation -> {
 			Object[] args = invocation.getArguments();
-			((Document) args[0]).setDocId(ConfigTestRepository.TEST_DOC_ID);
+			((Document) args[0]).setDocId(TestConstants.TEST_DOC_ID);
 			return true;
 		}).when(storageService).archive(any(Document.class));
 
@@ -493,13 +493,13 @@ public class TestDocumentService {
 		assertEquals(ReturnCode.OK.toString(), resultat.get("codeRetour"));
 
 		// Test with docid
-		input.put("docid", ConfigTestRepository.TEST_DOC_ID.toString());
+		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 		Draft draft = new Draft();
 		draft.setContentType("application/octet-stream");
 		draft.setContent("Test content".getBytes());
 		draft.setContentLength(10);
 		
-		when(draftDao.get(ConfigTestRepository.TEST_DOC_ID)).thenReturn(draft);
+		when(draftDao.get(TestConstants.TEST_DOC_ID)).thenReturn(draft);
 
 		resultat.clear();
 		documentService.store(input, resultat);

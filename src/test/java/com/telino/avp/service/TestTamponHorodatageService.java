@@ -12,16 +12,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import com.telino.avp.TestConstants;
 import com.telino.avp.entity.auxil.LogEvent;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.service.journal.TamponHorodatageService;
 import com.telino.avp.utils.Sha;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringJUnitConfig(TamponHorodatageService.class)
+@SpringBootTest
 public class TestTamponHorodatageService {
 	
 	@Autowired
@@ -32,7 +33,7 @@ public class TestTamponHorodatageService {
 	@Before
 	public void buildEntity() throws Exception {
 		logEvent = new LogEvent();
-		logEvent.setLogId(ConfigTestService.LOG_EVENT_ID);
+		logEvent.setLogId(TestConstants.LOG_EVENT_ID);
 		logEvent.setContenu("Test contenu");
 		logEvent.setHash(Sha.encode(logEvent.getContenu(), "utf-8"));
 		

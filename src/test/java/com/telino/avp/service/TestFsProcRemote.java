@@ -24,19 +24,19 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.telino.avp.TestConstants;
 import com.telino.avp.entity.param.StorageParam;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
-import com.telino.avp.repository.ConfigTestRepository;
 import com.telino.avp.service.storage.FSProcRemote;
 import com.telino.avp.tools.RemoteCall;
 
 @RunWith(MockitoJUnitRunner.class)
-@SpringJUnitConfig(FSProcRemote.class)
+@SpringBootTest
 public class TestFsProcRemote {
 
 	private static final String ID_STORAGE = "TestIdStorage";
@@ -122,7 +122,7 @@ public class TestFsProcRemote {
 
 		// Test the case where not all the entirety check are passed for the documents
 		Map<UUID, FileReturnError> badDocsResult = new HashMap<>();
-		badDocsResult.put(ConfigTestRepository.TEST_DOC_ID, FileReturnError.DECRYPT_ERROR);
+		badDocsResult.put(TestConstants.TEST_DOC_ID, FileReturnError.DECRYPT_ERROR);
 		ObjectMapper jsonMapper = new ObjectMapper();
 		result.put("codeRetour", ReturnCode.ERROR.toString());
 		result.put("message", jsonMapper.writeValueAsString(badDocsResult));
@@ -130,7 +130,7 @@ public class TestFsProcRemote {
 		when(remoteCall.callServletWithJsonObject(any(JSONObject.class), anyString())).thenReturn(result.toString());
 
 		assertFalse(fsProcRemote.checkFiles(Collections.emptyList(), badDocs));
-		assertEquals(FileReturnError.DECRYPT_ERROR, badDocs.get(ConfigTestRepository.TEST_DOC_ID));
+		assertEquals(FileReturnError.DECRYPT_ERROR, badDocs.get(TestConstants.TEST_DOC_ID));
 
 		verify(remoteCall, times(3)).callServletWithJsonObject(any(JSONObject.class), anyString());
 	}

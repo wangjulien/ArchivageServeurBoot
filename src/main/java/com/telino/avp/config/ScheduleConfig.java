@@ -28,7 +28,7 @@ public class ScheduleConfig implements SchedulingConfigurer {
 
 	public static Map<String, ScheduledFuture<?>> CTE = new ConcurrentHashMap<>();
 
-	@Value("${threadanalysis.cycletime}")
+	@Value("${app.threadanalysis.cycletime}")
 	private int cycleRate;
 
 	@Autowired

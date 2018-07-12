@@ -48,7 +48,7 @@ public class ScheduledTaskService implements IScheduledTaskService {
 	 * @throws ExpTaskException
 	 */
 	@Override
-	@Scheduled(cron = "${fillingTaskRate.cronexp}")
+	@Scheduled(cron = "${app.fillingTaskRate.cronexp}")
 	@Transactional(rollbackFor = Exception.class)	// Default timeout is 5 mins (jta.properties)
 	public void scheduledFillingTask() throws ExpTaskException {
 
@@ -91,7 +91,7 @@ public class ScheduledTaskService implements IScheduledTaskService {
 	 * @throws ExpTaskException
 	 */
 	@Override
-	@Scheduled(cron = "${exploitationTaskRate.cronexp}")
+	@Scheduled(cron = "${app.exploitationTaskRate.cronexp}")
 	public void scheduledExploitationTask() throws ExpTaskException {
 		try {
 			

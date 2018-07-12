@@ -10,10 +10,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
 import com.atomikos.jdbc.AtomikosDataSourceBean;
+import com.telino.avp.config.multids.DataSourceConfig.DsConfigObject;
 
 @Configuration
 @DependsOn("transactionManager")
@@ -21,49 +22,29 @@ import com.atomikos.jdbc.AtomikosDataSourceBean;
 		"com.telino.avp.dao.paramdao" }, entityManagerFactoryRef = "paramEntityManagerFactory", transactionManagerRef = "transactionManager")
 public class ParamDataSourceConfig {
 
-	@Value("${spring.paramds.id}")
-    private String paramDsId;
-	
-	@Value("${spring.paramds.driverClassName}")
-    private String paramDsDriver;
-	
-	@Value("${spring.paramds.username}")
-    private String paramDsUser;
-	
-	@Value("${spring.paramds.password}")
-    private String paramDsPsw;
-	
-	@Value("${spring.paramds.host}")
-    private String paramDsHost;
-	
-	@Value("${spring.paramds.port}")
-    private String paramDsPort;
-	
-	@Value("${spring.paramds.db}")
-    private String paramDsDb;
-	
-	@Value("${spring.paramds.pool}")
-    private int paramDsPool;
-	
-	@Value("${hibernate.hbm2ddl.auto}")
+	@Value("${spring.jpa.hibernate.ddl-auto}")
 	private String hbm2ddlAuto;
 
 	@Autowired
-	private JpaVendorAdapter jpaVendorAdapter;
+	private DataSourceConfig dataSourceConfig;
 
 	@Bean
 	public DataSource paramDataSource() {
+		// If AVPNAV datasource does not exist, application will not start
+		DsConfigObject dsConfigObject = dataSourceConfig.getDsConfigList().stream()
+				.filter(e -> e.getId().contains("AVPNAV")).findFirst().orElseThrow(RuntimeException::new);
+		
 		AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
-		ds.setUniqueResourceName(paramDsId);
-		ds.setXaDataSourceClassName(paramDsDriver);
+		ds.setUniqueResourceName(dsConfigObject.getId());
+		ds.setXaDataSourceClassName(dsConfigObject.getDriverClassName());
 		Properties p = new Properties();
-		p.setProperty("user", paramDsUser);
-		p.setProperty("password", paramDsPsw);
-		p.setProperty("serverName", paramDsHost);
-		p.setProperty("portNumber", paramDsPort);
-		p.setProperty("databaseName", paramDsDb);
+		p.setProperty("user", dsConfigObject.getUsername());
+		p.setProperty("password", dsConfigObject.getPassword());
+		p.setProperty("serverName", dsConfigObject.getHost());
+		p.setProperty("portNumber", dsConfigObject.getPort());
+		p.setProperty("databaseName", dsConfigObject.getDb());
 		ds.setXaProperties(p);
-		ds.setPoolSize(paramDsPool);
+		ds.setPoolSize(dsConfigObject.getPool());
 		return ds;
 	}
 
@@ -79,7 +60,7 @@ public class ParamDataSourceConfig {
 
 		// Java Config Dependency injection is provided here by setting JPA Vendor
 		// Adapter (Hibernate)
-		entityManagerFactory.setJpaVendorAdapter(jpaVendorAdapter);
+		entityManagerFactory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
 		// Entity Manager Factory will scan packages in order to find entities (@Entity)
 		entityManagerFactory.setPackagesToScan("com.telino.avp.entitysyst");

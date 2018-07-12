@@ -27,7 +27,7 @@ public class StartCdmsAnalysisController {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StartCdmsAnalysisController.class);
 
-	@Value("${threadanalysis.cycletime}")
+	@Value("${app.threadanalysis.cycletime}")
 	private int cycleRate;
 
 	@Autowired

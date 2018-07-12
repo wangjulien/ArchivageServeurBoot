@@ -78,6 +78,9 @@ public class DocumentDao {
 		documents.forEach(d -> {
 			if (Objects.isNull(d.getDocId()))
 				d.setDocId(UUID.randomUUID());
+			// Timestamp to have a chrono order
+			if (Objects.isNull(d.getTimestamp()))
+				d.setTimestamp(ZonedDateTime.now());
 		});
 
 		masterDocumentRepository.saveAll(documents);

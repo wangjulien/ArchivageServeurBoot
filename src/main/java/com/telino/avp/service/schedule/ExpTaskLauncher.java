@@ -35,7 +35,7 @@ public class ExpTaskLauncher {
 	
 	private final static int CHECK_FILES_TASK_TIMEOUT = 10;
 	
-	@Value("${exptask.max-thread-pool}")
+	@Value("${app.exptask.max-thread-pool}")
 	private int maxThreadPoolSize;
 
 	@Autowired

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.telino.avp.config.multids.DataSourceConfig;
 import com.telino.avp.dao.ExpTaskDao;
 import com.telino.avp.dao.masterdao.MasterExpTaskRepository;
 import com.telino.avp.entity.auxil.ExpTask;
@@ -37,11 +38,11 @@ public class ExpTaskChecker {
 	
 	private static final String APP_NAME = "ADELIS";
 	
-	@Value("${archivageserveur.url}")
+	@Value("${app.archivageserveur.url}")
 	private String urlServeur;
 	
-	@Value("${spring.masterds.db}")
-	private String dbName;
+	@Autowired
+	private DataSourceConfig dataSourceConfig;
 	
 	@Autowired
 	private MasterExpTaskRepository masterExpTaskDao;
@@ -136,7 +137,7 @@ public class ExpTaskChecker {
 		request.put("command", task.getTaskType().toString());
 		request.put("taskid", task.getTaskId().toString());
 		request.put("docid", task.getDocument().getDocId().toString());
-		request.put("nomBase", dbName.toUpperCase());
+		request.put("nomBase", dataSourceConfig.getDsConfigList().get(1).getId());
 		
 		LOGGER.debug(urlServeur + " " + request);
 

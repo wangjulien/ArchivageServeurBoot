@@ -34,7 +34,7 @@ import com.telino.avp.service.journal.JournalEventService;
 import com.telino.avp.tools.CdmsApiServletRequestIO;
 
 @Controller
-@RequestMapping("/ArchivageService")
+@RequestMapping("/archivageserveur/ArchivageService")
 public class ArchivageApiController {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchivageApiController.class);

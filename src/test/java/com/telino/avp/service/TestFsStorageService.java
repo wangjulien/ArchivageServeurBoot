@@ -27,8 +27,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.boot.test.context.SpringBootTest;
 
+import com.telino.avp.TestConstants;
 import com.telino.avp.dao.ChiffrementDao;
 import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.EncryptionKeyDao;
@@ -40,14 +41,13 @@ import com.telino.avp.entity.archive.EncryptionKey;
 import com.telino.avp.entity.param.Param;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
-import com.telino.avp.repository.ConfigTestRepository;
 import com.telino.avp.service.archivage.DocumentService;
 import com.telino.avp.service.storage.FSProc;
 import com.telino.avp.service.storage.FsStorageService;
 import com.telino.avp.utils.AesCipherException;
 
 @RunWith(MockitoJUnitRunner.class)
-@SpringJUnitConfig(TestFsStorageService.class)
+@SpringBootTest
 public class TestFsStorageService {
 
 	private static final UUID CRYPTAGE_ID = UUID.randomUUID();
@@ -94,7 +94,7 @@ public class TestFsStorageService {
 		Empreinte print = new Empreinte();
 
 		document = new Document();
-		document.setDocId(ConfigTestRepository.TEST_DOC_ID);
+		document.setDocId(TestConstants.TEST_DOC_ID);
 		document.setTitle("TestTitle.pdf");
 		document.setArchiveDate(ZonedDateTime.now());
 		document.setContent("Test content".getBytes());
@@ -185,23 +185,23 @@ public class TestFsStorageService {
 		// test all goes well
 		when(documentService.computeTelinoPrint(document)).thenReturn("Internal Telino print");
 		when(documentService.computePrint(document)).thenReturn("Simple print");
-		when(documentDao.get(eq(ConfigTestRepository.TEST_DOC_ID), anyBoolean())).thenReturn(document);
+		when(documentDao.get(eq(TestConstants.TEST_DOC_ID), anyBoolean())).thenReturn(document);
 		when(fsprocMirror.getFile("Unique print")).thenReturn(document.getContent());
 		when(fsprocMaster.getFile("Unique print")).thenReturn(document.getContent());
 
 		// To archive
-		assertTrue(fsStorageService.check(ConfigTestRepository.TEST_DOC_ID, true));
+		assertTrue(fsStorageService.check(TestConstants.TEST_DOC_ID, true));
 		assertTrue(Arrays.equals("Test content decrypted".getBytes(), document.getContent()));
 		verify(documentService, times(2)).computeTelinoPrint(document);
 
 		// Already archived
-		when(logArchiveDao.findHashForDocId(ConfigTestRepository.TEST_DOC_ID, false)).thenReturn("Simple print");
-		assertTrue(fsStorageService.check(ConfigTestRepository.TEST_DOC_ID, false));
+		when(logArchiveDao.findHashForDocId(TestConstants.TEST_DOC_ID, false)).thenReturn("Simple print");
+		assertTrue(fsStorageService.check(TestConstants.TEST_DOC_ID, false));
 		verify(documentService, times(2)).computePrint(document);
 
 		verify(fsprocMirror, times(2)).getFile("Unique print");
 		verify(fsprocMaster, times(2)).getFile("Unique print");
-		verify(documentDao, times(4)).get(eq(ConfigTestRepository.TEST_DOC_ID), anyBoolean());
+		verify(documentDao, times(4)).get(eq(TestConstants.TEST_DOC_ID), anyBoolean());
 		verify(documentService, times(4)).decrypt("Test content".getBytes(), encrytionKey, document.getCryptageIv());
 	}
 	
@@ -210,7 +210,7 @@ public class TestFsStorageService {
 	public void check_files() throws AvpExploitException {
 		
 		List<UUID> docIds = new ArrayList<>();
-		docIds.add(ConfigTestRepository.TEST_DOC_ID);
+		docIds.add(TestConstants.TEST_DOC_ID);
 		Map<UUID, FileReturnError> badDocsInUnit1 = new HashMap<>();
 		Map<UUID, FileReturnError> badDocsInUnit2 = new HashMap<>();
 		
@@ -222,13 +222,13 @@ public class TestFsStorageService {
 		
 		assertFalse(fsStorageService.checkFiles(docIds, badDocsInUnit1, badDocsInUnit2));
 		
-		assertEquals(FileReturnError.HASH_NOT_MATCH_ERROR, badDocsInUnit1.get(ConfigTestRepository.TEST_DOC_ID));
-		assertEquals(FileReturnError.HASH_NOT_MATCH_ERROR, badDocsInUnit2.get(ConfigTestRepository.TEST_DOC_ID));
+		assertEquals(FileReturnError.HASH_NOT_MATCH_ERROR, badDocsInUnit1.get(TestConstants.TEST_DOC_ID));
+		assertEquals(FileReturnError.HASH_NOT_MATCH_ERROR, badDocsInUnit2.get(TestConstants.TEST_DOC_ID));
 		
 		// Print Hash check passed	
 		badDocsInUnit1.clear();
 		badDocsInUnit2.clear();
-		when(logArchiveDao.findHashForDocId(eq(ConfigTestRepository.TEST_DOC_ID), anyBoolean())).thenReturn("Test Hash");
+		when(logArchiveDao.findHashForDocId(eq(TestConstants.TEST_DOC_ID), anyBoolean())).thenReturn("Test Hash");
 		when(fsprocMaster.checkFiles(anyList(), eq(badDocsInUnit1))).thenReturn(true);
 		when(fsprocMirror.checkFiles(anyList(), eq(badDocsInUnit2))).thenReturn(true);
 		

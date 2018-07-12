@@ -11,9 +11,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
@@ -35,8 +35,8 @@ import com.telino.avp.protocol.DbEntityProtocol.ExpTaskType;
  * @author jwang
  *
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = { ConfigTestRepository.class })
+@RunWith(SpringRunner.class)
+@SpringBootTest
 public class TestExpTaskRepository {
 	
 	private static final String MASTER_DS_ID = "AVP_JW";
