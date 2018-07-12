@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
@@ -16,7 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.telino.avp.config.multids.DataSourceConfig;
+import com.telino.avp.config.multids.MasterDsContextHolder;
 import com.telino.avp.dao.ExpTaskDao;
 import com.telino.avp.dao.masterdao.MasterExpTaskRepository;
 import com.telino.avp.entity.auxil.ExpTask;
@@ -40,9 +38,6 @@ public class ExpTaskChecker {
 	
 	@Value("${app.archivageserveur.url}")
 	private String urlServeur;
-	
-	@Autowired
-	private DataSourceConfig dataSourceConfig;
 	
 	@Autowired
 	private MasterExpTaskRepository masterExpTaskDao;
@@ -71,7 +66,7 @@ public class ExpTaskChecker {
 
 		expiredTasks.forEach(tk -> tk.setState(ExpTaskState.A));
 
-		saveExpTaskInBothDb(expiredTasks);
+		expTaskDao.saveExpTasks(expiredTasks);
 
 		LOGGER.info("Nombre de tâche abondonnée : " + expiredTasks.size());
 	}
@@ -119,7 +114,7 @@ public class ExpTaskChecker {
 
 		expTasks.forEach(tk -> enqueueExpTask(tk, tasksQueue));
 		
-		saveExpTaskInBothDb(expTasks);		
+		expTaskDao.saveExpTasks(expTasks);		
 
 		// Methode Asynchrone, n'attend pas la reponse
 		expTaskLaucher.launchExpTask(tasksQueue);
@@ -137,7 +132,7 @@ public class ExpTaskChecker {
 		request.put("command", task.getTaskType().toString());
 		request.put("taskid", task.getTaskId().toString());
 		request.put("docid", task.getDocument().getDocId().toString());
-		request.put("nomBase", dataSourceConfig.getDsConfigList().get(1).getId());
+		request.put("nomBase", MasterDsContextHolder.getCurrentDsId());
 		
 		LOGGER.debug(urlServeur + " " + request);
 
@@ -151,30 +146,5 @@ public class ExpTaskChecker {
 
 		// Liste de task a excuter
 		tasksQueue.add(call);
-	}
-
-	
-	
-	/**
-	 * Fonction utilitaire pour persister/mettre a jour des taches dans les deux DB
-	 * 
-	 * @param tasks
-	 *            : liste de taches a persister dans les deux db
-	 */
-	public void saveExpTaskInBothDb(List<ExpTask> tasks) {
-		expTaskDao.saveExpTasks(tasks);
-	}
-	
-		
-	@Transactional(rollbackFor = Exception.class)
-	public void updateExpTaskStateInBothDb(UUID taskId, ExpTaskState state) {
-		Optional<ExpTask> optTask = masterExpTaskDao.findById(taskId);
-		if (optTask.isPresent()) {
-			
-			ExpTask expTask = optTask.get();
-			expTask.setState(state);
-			expTask.setDateFin(ZonedDateTime.now());
-			expTaskDao.saveExpTask(expTask);
-		}
 	}
 }

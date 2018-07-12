@@ -1,7 +1,9 @@
 package com.telino.avp.dao;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,7 @@ import com.telino.avp.dao.masterdao.MasterExpTaskRepository;
 import com.telino.avp.dao.mirrordao.MirrorExpTaskRepository;
 import com.telino.avp.entity.auxil.ExpComment;
 import com.telino.avp.entity.auxil.ExpTask;
+import com.telino.avp.protocol.DbEntityProtocol.ExpTaskState;
 
 @Repository
 @Transactional
@@ -45,6 +48,18 @@ public class ExpTaskDao {
 		for (ExpComment cm : task.getComments()) {
 			if (Objects.isNull(cm.getComId()))
 				cm.setComId(UUID.randomUUID());
+		}
+	}
+	
+	@Transactional(rollbackFor = Exception.class)
+	public void updateExpTaskStateInBothDb(UUID taskId, ExpTaskState state) {
+		Optional<ExpTask> optTask = masterExpTaskRepository.findById(taskId);
+		if (optTask.isPresent()) {
+			
+			ExpTask expTask = optTask.get();
+			expTask.setState(state);
+			expTask.setDateFin(ZonedDateTime.now());
+			saveExpTask(expTask);
 		}
 	}
 }

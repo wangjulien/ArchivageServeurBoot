@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import com.telino.avp.dao.ExpTaskDao;
 import com.telino.avp.exception.ExpTaskException;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
 import com.telino.avp.protocol.DbEntityProtocol.ExpTaskState;
@@ -37,9 +38,9 @@ public class ExpTaskLauncher {
 	
 	@Value("${app.exptask.max-thread-pool}")
 	private int maxThreadPoolSize;
-
+	
 	@Autowired
-	private ExpTaskChecker expTaskChecker;
+	private ExpTaskDao expTaskDao;
 
 	public ExpTaskLauncher() {
 		super();
@@ -77,10 +78,10 @@ public class ExpTaskLauncher {
 					// Reussi
 					if (ReturnCode.OK.toString().equals(codeRetour)) {
 						// Si traitement reussi					
-						expTaskChecker.updateExpTaskStateInBothDb(taskId, ExpTaskState.T);
+						expTaskDao.updateExpTaskStateInBothDb(taskId, ExpTaskState.T);
 						
 					} else {
-						expTaskChecker.updateExpTaskStateInBothDb(taskId, ExpTaskState.A);
+						expTaskDao.updateExpTaskStateInBothDb(taskId, ExpTaskState.A);
 						LOGGER.error("Erreur lors l'exécution de la tâche d'exploitation TaskId : " + taskId);
 					}					
 				} else {

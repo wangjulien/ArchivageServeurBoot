@@ -47,8 +47,10 @@ public class ArchivageServeurBootApplication {
 				for (DsConfigObject dsConfigObject : dataSourceConfig.getDsConfigList()) {
 					ContextResource resource = new ContextResource();
 					resource.setName("jdbc/" + dsConfigObject.getId());
+					resource.setAuth("Container");
 					resource.setType(DataSource.class.getName());
 					resource.setProperty("driverClassName", "org.postgresql.Driver");
+					resource.setProperty("factory", "org.apache.tomcat.jdbc.pool.DataSourceFactory");
 					resource.setProperty("url", "jdbc:postgresql://" + dsConfigObject.getHost() + ":"
 							+ dsConfigObject.getPort() + "/" + dsConfigObject.getDb());
 					resource.setProperty("username", dsConfigObject.getUsername());

@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.telino.avp.dao.ExpTaskDao;
 import com.telino.avp.dao.LogEventDao;
 import com.telino.avp.entity.auxil.ExpTask;
 import com.telino.avp.entity.auxil.LogEvent;
@@ -35,7 +36,10 @@ public class ScheduledTaskService implements IScheduledTaskService {
 
 	@Autowired
 	private LogEventDao logEventDao;
-
+	
+	@Autowired
+	private ExpTaskDao expTaskDao;
+	
 	@Autowired
 	private ExpTaskBuilder expTaskBuilder;
 	
@@ -67,7 +71,7 @@ public class ScheduledTaskService implements IScheduledTaskService {
 			List<ExpTask> expTasks = exploitLogEventForExpTask(logEvents);
 
 			// Persister les taches d'exploitation dans exp_task
-			expTaskChecker.saveExpTaskInBothDb(expTasks);
+			expTaskDao.saveExpTasks(expTasks);
 			
 
 			// Marque fait dans log_event

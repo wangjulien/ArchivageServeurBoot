@@ -1,7 +1,7 @@
 server:
   port: 8087
   servlet:
-    context-path: /
+    context-path: /archivageserveur
   tomcat:
     accesslog:
       enabled: true
@@ -22,6 +22,13 @@ spring:
     show-sql: false
     hibernate:
       ddl-auto: validate
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
   dsConfigList:
     - 
       id: AVPNAV
