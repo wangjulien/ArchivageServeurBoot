@@ -391,7 +391,7 @@ public class ComAndRestService {
 		newRestitution.setRestitutionMotif(input.get("restitutionmotif").toString());
 		newRestitution.setRestitutionStatus(RestitutionState.E);
 		newRestitution.setHorodatage(ZonedDateTime.now());
-		newRestitution.setDesinataire(input.get("destinataire").toString());
+		newRestitution.setDestinataire(input.get("destinataire").toString());
 		// expiration d'une Restitution après 62 jours.
 		newRestitution.setRestitutionEnd(ZonedDateTime.now().plus(62, ChronoUnit.DAYS));
 

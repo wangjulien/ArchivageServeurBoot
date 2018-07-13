@@ -67,13 +67,10 @@ public class TestDocumentRepository {
 		documentTwo.setStatut(DocumentStatut.ARCHIVED.getStatutCode());
 		documentTwo.setArchiveEnd(ZonedDateTime.now().minus(1, ChronoUnit.DAYS));
 		documentTwo.setLogicaldelete(false);
-
-		// Persister
-//		documentDao.saveMetaDonneesDocument(documentOne);
-//		documentDao.saveMetaDonneesDocument(documentTwo);
 		
-//		documentOne.setEmpreinte(empreinteOne);
-//		documentTwo.setEmpreinte(empreinteTwo);
+		// Persister
+		documentOne.setEmpreinte(empreinteOne);
+		documentTwo.setEmpreinte(empreinteTwo);
 		
 					
 		documentDao.saveMetaDonneesDocument(documentOne);
@@ -92,10 +89,10 @@ public class TestDocumentRepository {
 	@Test
 	public void fill_seconde_doc_empreinte_unique() {
 
-//		documentDao.fillEmpreinteUnique(documentTwo);
-//
-//		assertEquals(ConfigTestRepository.TEST_HASH + String.valueOf(2),
-//				documentTwo.getEmpreinte().getEmpreinteUnique());
+		documentDao.fillEmpreinteUnique(documentTwo);
+
+		assertEquals(TestConstants.TEST_HASH + String.valueOf(2),
+				documentTwo.getEmpreinte().getEmpreinteUnique());
 
 	}
 
@@ -143,23 +140,23 @@ public class TestDocumentRepository {
 
 	@Test
 	public void restore_the_hash() {
-//		// Prepare the Mirror hash with NULL
-//		documentTwo = documentDao.get(documentTwo.getDocId(), true);
-//		documentTwo.getEmpreinte().setEmpreinte(null);
-//		mirrorDocumentRepository.save(documentTwo);
-//
-//		documentDao.restoreTheHash(documentTwo.getDocId(), ConfigTestRepository.TEST_HASH, true);
-//		assertEquals(ConfigTestRepository.TEST_HASH,
-//				documentDao.get(documentTwo.getDocId(), true).getEmpreinte().getEmpreinte());
-//
-//		// Prepare the Master hash with NULL
-//		documentTwo = documentDao.get(documentTwo.getDocId(), false);
-//		documentTwo.getEmpreinte().setEmpreinte(null);
-//		masterDocumentRepository.save(documentTwo);
-//
-//		documentDao.restoreTheHash(documentTwo.getDocId(), ConfigTestRepository.TEST_HASH, false);
-//		assertEquals(ConfigTestRepository.TEST_HASH,
-//				documentDao.get(documentTwo.getDocId(), false).getEmpreinte().getEmpreinte());
+		// Prepare the Mirror hash with NULL
+		documentTwo = documentDao.get(documentTwo.getDocId(), true);
+		documentTwo.getEmpreinte().setEmpreinte(null);
+		mirrorDocumentRepository.save(documentTwo);
+
+		documentDao.restoreTheHash(documentTwo.getDocId(), TestConstants.TEST_HASH, true);
+		assertEquals(TestConstants.TEST_HASH,
+				documentDao.get(documentTwo.getDocId(), true).getEmpreinte().getEmpreinte());
+
+		// Prepare the Master hash with NULL
+		documentTwo = documentDao.get(documentTwo.getDocId(), false);
+		documentTwo.getEmpreinte().setEmpreinte(null);
+		masterDocumentRepository.save(documentTwo);
+
+		documentDao.restoreTheHash(documentTwo.getDocId(), TestConstants.TEST_HASH, false);
+		assertEquals(TestConstants.TEST_HASH,
+				documentDao.get(documentTwo.getDocId(), false).getEmpreinte().getEmpreinte());
 
 	}
 

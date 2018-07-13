@@ -34,7 +34,7 @@ public class Communication {
 	
 	private ZonedDateTime horodatage;
 	
-	private String desinataire;
+	private String destinataire;
 	
 	@Column(name = "communication_end")
 	private ZonedDateTime communicationEnd;
@@ -94,12 +94,12 @@ public class Communication {
 		this.horodatage = horodatage;
 	}
 
-	public String getDesinataire() {
-		return desinataire;
+	public String getDestinataire() {
+		return destinataire;
 	}
 
-	public void setDesinataire(String desinataire) {
-		this.desinataire = desinataire;
+	public void setDestinataire(String desinataire) {
+		this.destinataire = desinataire;
 	}
 
 	public ZonedDateTime getCommunicationEnd() {

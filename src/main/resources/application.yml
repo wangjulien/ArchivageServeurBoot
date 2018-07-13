@@ -40,20 +40,20 @@ spring:
       password: cdms123!
       pool: 5
     - 
-      id: AVP_JW
+      id: AVP_TEST
       driverClassName: org.postgresql.xa.PGXADataSource
       host: 192.168.4.7
       port: 5432
-      db: avp_jw
+      db: avp_test
       username: cdms
       password: cdms123!
       pool: 5
     - 
-      id: AVP_JW_M
+      id: AVP_TEST_M
       driverClassName: org.postgresql.xa.PGXADataSource
       host: 192.168.4.7
       port: 5432
-      db: avp_jw_m
+      db: avp_test_m
       username: cdms
       password: cdms123!
       pool: 5

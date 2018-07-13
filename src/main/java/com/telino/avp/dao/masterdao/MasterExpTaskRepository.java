@@ -25,5 +25,5 @@ public interface MasterExpTaskRepository extends JpaRepository<ExpTask, UUID> {
 			+ "where ts.state = :state", nativeQuery = true)
 	public List<ExpTask> findToRelauchByStatusAndExpired(@Param("state") String state);
 
-	public List<ExpTask> findByStateAndTaskTypeIdIsNot(ExpTaskState state, Long typeId);
+	public List<ExpTask> findByStateAndTaskTypeIdIsNot(ExpTaskState state, Integer typeId);
 }

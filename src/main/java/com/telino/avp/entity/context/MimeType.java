@@ -3,7 +3,6 @@ package com.telino.avp.entity.context;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -24,7 +23,7 @@ public class MimeType {
 	@Column(name = "mime_description")
 	private String mimeDescription;
 	
-	@ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+	@ManyToMany(mappedBy = "mimeTypes")
 	private Set<DocType> docTypes = new HashSet<>();
 
 	public MimeType() {

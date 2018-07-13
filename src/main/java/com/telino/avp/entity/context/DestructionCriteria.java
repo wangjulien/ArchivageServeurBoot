@@ -1,6 +1,4 @@
-package com.telino.avp.entity.archive;
-
-import java.util.UUID;
+package com.telino.avp.entity.context;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -11,7 +9,7 @@ import javax.persistence.Table;
 public class DestructionCriteria {
 
 	@Id
-	private UUID destructionCriteriaId;
+	private Integer destructionCriteriaId;
 
 	private String destructionCriteria;
 
@@ -21,11 +19,11 @@ public class DestructionCriteria {
 		super();
 	}
 
-	public UUID getDestructionCriteriaId() {
+	public Integer getDestructionCriteriaId() {
 		return destructionCriteriaId;
 	}
 
-	public void setDestructionCriteriaId(UUID destructionCriteriaId) {
+	public void setDestructionCriteriaId(Integer destructionCriteriaId) {
 		this.destructionCriteriaId = destructionCriteriaId;
 	}
 

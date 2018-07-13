@@ -31,7 +31,7 @@ public class ExpTask {
 	private ZonedDateTime dateDeb;
 	private ZonedDateTime dateFin;
 
-	private Long taskTypeId;
+	private Integer taskTypeId;
 
 	@ManyToOne
 	@JoinColumn(name = "docid")
@@ -102,11 +102,11 @@ public class ExpTask {
 		}
 	}
 
-	public Long getTaskTypeId() {
+	public Integer getTaskTypeId() {
 		return taskTypeId;
 	}
 
-	public void setTaskTypeId(Long taskTypeId) {
+	public void setTaskTypeId(Integer taskTypeId) {
 		this.taskTypeId = taskTypeId;
 	}
 

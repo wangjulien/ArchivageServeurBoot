@@ -23,8 +23,9 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
-
-		<tomcat.version>9.0.10</tomcat.version>
+		<!-- Version Hibernate specified here, for the bug of Share PK using @MapsId 
+			existing after this version -->
+		<hibernate.version>5.2.13.Final</hibernate.version>
 		<bouncycastle.version>1.59</bouncycastle.version>
 		<itextpdf.version>5.5.13</itextpdf.version>
 		<verapdf.version>1.12.1</verapdf.version>

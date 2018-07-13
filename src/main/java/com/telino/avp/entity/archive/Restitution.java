@@ -34,7 +34,7 @@ public class Restitution {
 	
 	private ZonedDateTime horodatage;
 	
-	private String desinataire;
+	private String destinataire;
 	
 	@Column(name = "restitution_end")
 	private ZonedDateTime restitutionEnd;
@@ -94,12 +94,12 @@ public class Restitution {
 		this.horodatage = horodatage;
 	}
 
-	public String getDesinataire() {
-		return desinataire;
+	public String getDestinataire() {
+		return destinataire;
 	}
 
-	public void setDesinataire(String desinataire) {
-		this.desinataire = desinataire;
+	public void setDestinataire(String desinataire) {
+		this.destinataire = desinataire;
 	}
 
 	public ZonedDateTime getRestitutionEnd() {
