@@ -2,8 +2,8 @@ package com.telino.avp.tools;
 
 public class ServerProc {
 
-	public static String password1 = null;
-	public static String password2 = null;
+	public static String password1 = "PASSWORD1";
+	public static String password2 = "PASSWORD2";
 
 	
 	// TODO : it should not to be here!!!

@@ -67,14 +67,16 @@ public class ArchivageApiService {
 			if (Objects.isNull(ServerProc.password1) && Objects.isNull(ServerProc.password2)) {
 				resultat.put("codeRetour", "80");
 				resultat.put("message", "");
+				return resultat;
 			} else if (Objects.isNull(ServerProc.password1)) {
 				resultat.put("codeRetour", "81");
 				resultat.put("message", "");
+				return resultat;
 			} else if (Objects.isNull(ServerProc.password2)) {
 				resultat.put("codeRetour", "82");
 				resultat.put("message", "");
+				return resultat;
 			}
-			return resultat;
 		}
 
 		// Each request contains login information for the user

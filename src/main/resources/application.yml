@@ -5,7 +5,7 @@ server:
   tomcat:
     accesslog:
       enabled: true
-    basedir: ./tomcat
+    basedir: /home/tomcat/tomcat
 
 management:
   endpoints:

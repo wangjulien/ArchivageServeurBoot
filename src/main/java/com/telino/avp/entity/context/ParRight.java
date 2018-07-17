@@ -1,5 +1,7 @@
 package com.telino.avp.entity.context;
 
+import java.util.Objects;
+
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
@@ -26,31 +28,31 @@ public class ParRight {
 	private User user;
 
 	@Column(name = "par_candeposit")
-	private boolean parCanDeposit;
+	private Boolean parCanDeposit;
 
 	@Column(name = "par_candelay")
-	private boolean parCanDelay;
+	private Boolean parCanDelay;
 
 	@Column(name = "par_candestroy")
-	private boolean parCanDestroy;
+	private Boolean parCanDestroy;
 
 	@Column(name = "par_canmodprof")
-	private boolean parCanModProf;
+	private Boolean parCanModProf;
 
 	@Column(name = "par_canread")
-	private boolean parCanRead;
+	private Boolean parCanRead;
 
 	@Column(name = "can_communicate")
-	private boolean canCommunicate;
+	private Boolean canCommunicate;
 
 	@Column(name = "can_restitute")
-	private boolean canRestitute;
+	private Boolean canRestitute;
 
 	@Column(name = "par_cancommunicate")
-	private boolean parCanCommunicate;
+	private Boolean parCanCommunicate;
 
 	@Column(name = "par_canrestitute")
-	private boolean parCanRestitute;
+	private Boolean parCanRestitute;
 
 	public ParRight() {
 		super();
@@ -81,75 +83,75 @@ public class ParRight {
 		this.user = login;
 	}
 
-	public boolean isParCanDeposit() {
-		return parCanDeposit;
+	public Boolean isParCanDeposit() {
+		return Objects.isNull(parCanDeposit) ? false : parCanDeposit;
 	}
 
-	public void setParCanDeposit(boolean parCanDeposit) {
+	public void setParCanDeposit(Boolean parCanDeposit) {
 		this.parCanDeposit = parCanDeposit;
 	}
 
-	public boolean isParCanDelay() {
-		return parCanDelay;
+	public Boolean isParCanDelay() {
+		return Objects.isNull(parCanDelay) ? false : parCanDelay;
 	}
 
-	public void setParCanDelay(boolean parCanDelay) {
+	public void setParCanDelay(Boolean parCanDelay) {
 		this.parCanDelay = parCanDelay;
 	}
 
-	public boolean isParCanDestroy() {
-		return parCanDestroy;
+	public Boolean isParCanDestroy() {
+		return Objects.isNull(parCanDestroy) ? false : parCanDestroy;
 	}
 
-	public void setParCanDestroy(boolean parCanDestroy) {
+	public void setParCanDestroy(Boolean parCanDestroy) {
 		this.parCanDestroy = parCanDestroy;
 	}
 
-	public boolean isParCanModProf() {
-		return parCanModProf;
+	public Boolean isParCanModProf() {
+		return Objects.isNull(parCanModProf) ? false : parCanModProf;
 	}
 
-	public void setParCanModProf(boolean parCanModProf) {
+	public void setParCanModProf(Boolean parCanModProf) {
 		this.parCanModProf = parCanModProf;
 	}
 
-	public boolean isParCanRead() {
-		return parCanRead;
+	public Boolean isParCanRead() {
+		return Objects.isNull(parCanRead) ? false : parCanRead;
 	}
 
-	public void setParCanRead(boolean parCanRead) {
+	public void setParCanRead(Boolean parCanRead) {
 		this.parCanRead = parCanRead;
 	}
 
-	public boolean isCanCommunicate() {
-		return canCommunicate;
+	public Boolean isCanCommunicate() {
+		return Objects.isNull(canCommunicate) ? false : canCommunicate;
 	}
 
-	public void setCanCommunicate(boolean canCommunicate) {
+	public void setCanCommunicate(Boolean canCommunicate) {
 		this.canCommunicate = canCommunicate;
 	}
 
-	public boolean isCanRestitute() {
-		return canRestitute;
+	public Boolean isCanRestitute() {
+		return Objects.isNull(canRestitute) ? false : canRestitute;
 	}
 
-	public void setCanRestitute(boolean canRestitute) {
+	public void setCanRestitute(Boolean canRestitute) {
 		this.canRestitute = canRestitute;
 	}
 
-	public boolean isParCanCommunicate() {
-		return parCanCommunicate;
+	public Boolean isParCanCommunicate() {
+		return Objects.isNull(parCanCommunicate) ? false : parCanCommunicate;
 	}
 
-	public void setParCanCommunicate(boolean parCanCommunicate) {
+	public void setParCanCommunicate(Boolean parCanCommunicate) {
 		this.parCanCommunicate = parCanCommunicate;
 	}
 
-	public boolean isParCanRestitute() {
-		return parCanRestitute;
+	public Boolean isParCanRestitute() {
+		return Objects.isNull(parCanRestitute) ? false : parCanRestitute;
 	}
 
-	public void setParCanRestitute(boolean parCanRestitute) {
+	public void setParCanRestitute(Boolean parCanRestitute) {
 		this.parCanRestitute = parCanRestitute;
 	}
 }

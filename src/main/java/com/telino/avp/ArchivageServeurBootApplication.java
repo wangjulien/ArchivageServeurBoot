@@ -18,7 +18,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import com.telino.avp.config.multids.DataSourceConfig;
 import com.telino.avp.config.multids.DataSourceConfig.DsConfigObject;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.telino.avp", "CdmsProg.nfz42013"})
 @EnableScheduling
 @EnableAsync
 @EnableWebMvc

@@ -37,9 +37,9 @@ import com.telino.avp.tools.ServerProc;
 @SpringBootTest
 public class TestUserProfileRightService {
 
-	private static final Integer PROFILE_ID = -20;
+	private static final Integer PROFILE_ID = -30;
 	private static final Integer DOCTYPE_ID = -10;
-	private static final String USER_ID = "ADMIN_TEST";
+	private static final String USER_ID = "ADMIN_TEST_M";
 
 	@InjectMocks
 	private UserProfileRightService userProfileRightService;
@@ -157,6 +157,9 @@ public class TestUserProfileRightService {
 
 	@Test
 	public void store_password() {
+		ServerProc.password1 = null;
+		ServerProc.password2 = null;
+		
 		// When
 		Map<String, Object> input = new HashMap<>();
 		input.put("password1", "TestPassword1");

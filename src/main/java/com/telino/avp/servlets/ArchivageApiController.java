@@ -55,10 +55,11 @@ public class ArchivageApiController {
 	private ArchivageApiService archivageApis;
 
 	@SuppressWarnings("unchecked")
-	@RequestMapping(params = { "nomBase", "environnement", "init" }, method = { RequestMethod.GET, RequestMethod.POST })
+	@RequestMapping(method = { RequestMethod.GET, RequestMethod.POST })
 	public void doGetAndPost(@RequestParam("nomBase") String mybase,
-			@RequestParam("environnement") String environnement, @RequestParam("init") String init,
-			HttpServletRequest request, HttpServletResponse response) throws Exception {
+			@RequestParam(value = "environnement", required = false) String environnement,
+			@RequestParam(value = "init", required = false) String init, HttpServletRequest request,
+			HttpServletResponse response) throws Exception {
 
 		if (Objects.nonNull(mybase)) {
 
@@ -122,8 +123,8 @@ public class ArchivageApiController {
 
 			//
 			// TODO : Switch DataSource par AOP intercepter
-			//
-			switchDataSourceService.switchDataSourceFor(mybase);
+			//			
+			switchDataSourceService.switchDataSourceFor(header.get("nomBase") == null ? "" : header.get("nomBase").toString());
 
 			UUID idDepot = null;
 			if (Commande.STORE.toString().equals((String) header.get("command"))) {
