@@ -238,7 +238,7 @@ public class JournalArchiveService extends AbstractJournalService {
 					Draft draft = draftOpt.get();
 					// update drafte info
 					draft.setTransmis(false);
-					draft.setStatut(DraftStatut.ARCHIVED);
+					draft.setStatut(DraftStatut.ARCHIVED.toString());
 					draft.setMotif("N° d''archive : " + doc.getDocId());
 					draft.setDraftdate(ZonedDateTime.now());
 					draftDao.saveDraft(draft);

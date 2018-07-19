@@ -9,45 +9,48 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
 
+import com.telino.avp.ArchivageServeurBootApplication;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.context.Profile;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.service.journal.JournalArchiveService;
 import com.telino.avp.service.storage.AbstractStorageService;
+import com.telino.avp.service.storage.FsStorageService;
 import com.telino.avp.tools.FillPdfForm;
 
 import CdmsApi.CdmsLogger;
 import CdmsApi.MainObject;
 
-@Configurable(dependencyCheck = true)
+//@Configurable(autowire = Autowire.BY_TYPE, dependencyCheck = true)
 public class checkpar_rights extends MainObject {
-	
-	@Autowired
-	private JournalArchiveService journalArchiveService;
 
-	@Autowired
-	private AbstractStorageService storageService;
-	
+	private JournalArchiveService journalArchiveService = null;
+
+	private AbstractStorageService storageService = null;
+
 	final static String foncname = "checkpar_rights";
 	private Connection conn;
 	private Connection connMirror;
 	private boolean alerte = false;
 	static final Logger logger = Logger.getLogger(CdmsProg.nfz42013.checkpar_rights.class);
 
-	
-	
 	public checkpar_rights(HashMap<String, Object> pH) {
+		// !!! Hack Code in order to get Spring controlled bean, because the
+		// @Configurable and loadingTimeWeaving mechanism does not work
+		storageService = (FsStorageService) ArchivageServeurBootApplication.SPRING_CONTEXT.getBean("fsStorageService");
+		journalArchiveService = (JournalArchiveService) ArchivageServeurBootApplication.SPRING_CONTEXT
+				.getBean("journalArchiveService");
+
 		CurrentObjectValues = pH;
 		conn = (Connection) CurrentObjectValues.get("Connection");
 		connMirror = (Connection) CurrentObjectValues.get("connMirror");
-		if (this.getObjectValue("TRACE")!=null) {
-			if ((Boolean) this.getObjectValue("TRACE")) this.setTraceOn();
+		if (this.getObjectValue("TRACE") != null) {
+			if ((Boolean) this.getObjectValue("TRACE"))
+				this.setTraceOn();
 		}
 	}
-	
+
 	public boolean Exec() throws CdmsException {
 		CdmsLogger.log(logger, CurrentObjectValues, (String) CurrentObjectValues.get("$APPLI"));
 		// mise à jour de la log d'archivage
@@ -72,7 +75,6 @@ public class checkpar_rights extends MainObject {
 
 			rs.close();
 
-			
 			String mode = "modification";
 			if (CurrentObjectValues.get("mode").equals("create"))
 				mode = "création";
@@ -91,7 +93,7 @@ public class checkpar_rights extends MainObject {
 					+ CurrentObjectValues.get("par_cancommunicate") + ", " + "restitution: "
 					+ CurrentObjectValues.get("par_canrestitute");
 
-			String operation = "Attestation de " + mode + " du profil d'archivage - " + profil+" -";
+			String operation = "Attestation de " + mode + " du profil d'archivage - " + profil + " -";
 			byte[] content = FillPdfForm.buildAttestation(operation, action);
 			Document attestation = new Document();
 			attestation.setArchiveDate(ZonedDateTime.now());
@@ -117,7 +119,7 @@ public class checkpar_rights extends MainObject {
 							"Archivage des attestations de " + mode + " de profil d'archivage", null, null, null);
 				}
 			}
-			
+
 			Map<String, Object> inputToLog = new HashMap<>();
 			inputToLog.put("operation", action);
 			inputToLog.put("userid", user);
@@ -127,14 +129,10 @@ public class checkpar_rights extends MainObject {
 			journalArchiveService.log(inputToLog);
 
 			return true;
-		} 
-	catch (SQLException | AvpExploitException e) {
-		e.printStackTrace();
-		return false;
-	}
-
-		
-		
+		} catch (SQLException | AvpExploitException e) {
+			e.printStackTrace();
+			return false;
+		}
 
 	}
 }

@@ -489,7 +489,7 @@ public class TestDocumentService {
 
 		documentService.store(input, resultat);
 
-		assertEquals(PROFILE_ID.toString(), input.get("par_id"));
+		assertEquals(PROFILE_ID, (Integer) input.get("par_id"));
 		assertEquals(ReturnCode.OK.toString(), resultat.get("codeRetour"));
 
 		// Test with docid

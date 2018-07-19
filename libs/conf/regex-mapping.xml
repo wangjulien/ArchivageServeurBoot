@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<items xmlns="http://www.cines.fr/validator">
+<item value=".*[.]h5"  format="HDF5" />
+<item value=".*[.]xmf"  format="XML" />
+</items>

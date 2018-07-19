@@ -7,201 +7,212 @@ import CdmsApi.types.TypeJAV;
 
 public class draftsclass extends TypeJAV {
 
-    public draftsclass () {
-        super ();
-        initialize ();
-    }
+	public draftsclass() {
+		super();
+		initialize();
+	}
 
-    public draftsclass (Connection conn, boolean b) {
-        super (conn, b);
-        initialize ();
-    }
+	public draftsclass(Connection conn, boolean b) {
+		super(conn, b);
+		initialize();
+	}
 
+	protected class CLE {
+		public String docid;
+		public final String F = "A008";
+	}
 
-    protected class T {
-        public Integer docid;
-        public String doctype;
-        public String categorie;
-        public String keywords;
-        public String content;
-        public Integer content_length;
-        public String content_type;
-        public String domaineowner;
-        public String organisationversante;
-        public Date docsdate;
-        public String description;
-        public String title;
-        public String silo;
-        public String mailowner;
-        public Boolean transmis;
-        public String statut;
-        public String motif;
-        public String userid;
-        public final String F = "S008A030A030A900A900E008A100A030A040T015A200A060A020A100B005A020A200A012";
-    }
-    protected T DRAFTS_T = new T();
+	protected CLE DRAFTS_CLE = new CLE();
 
-    protected class CLE {
-        public Integer docid;
-        public final String F = "S008";
-    }
-    protected CLE DRAFTS_CLE = new CLE();
+	protected class PKEY {
+		public String docid;
+		public final String F = "A008";
+	}
 
-    protected class PKEY {
-        public Integer docid;
-        public final String F = "S008";
-    }
-    protected PKEY DRAFTS_PKEY = new PKEY();
+	protected PKEY DRAFTS_PKEY = new PKEY();
 
-    public  Integer getDocid() {
-        return (Integer) CurrentObjectValues.get("docid");
-    }
+	protected class T {
+		public String docid;
+		public String doctype;
+		public String categorie;
+		public String keywords;
+		public String content;
+		public Integer content_length;
+		public String content_type;
+		public String domaineowner;
+		public String organisationversante;
+		public Date docsdate;
+		public String description;
+		public String title;
+		public String domnnom;
+		public String mailowner;
+		public Boolean transmis;
+		public String statut;
+		public String motif;
+		public String userid;
+		public Date draftdate;
+		public final String F = "A008A030A030A900A900E008A100A030A040T015A200A060A020A100B005A020A200A012T015";
+	}
 
-    public void setDocid(Integer val) {
-        setObjectValue (val, "docid");
-    }
+	protected T DRAFTS_T = new T();
 
-    public  String getDoctype() {
-        return (String) CurrentObjectValues.get("doctype");
-    }
+	public String getDocid() {
+		return (String) CurrentObjectValues.get("docid");
+	}
 
-    public void setDoctype(String val) {
-        setObjectValue (val, "doctype");
-    }
+	public void setDocid(String val) {
+		setObjectValue(val, "docid");
+	}
 
-    public  String getCategorie() {
-        return (String) CurrentObjectValues.get("categorie");
-    }
+	public String getDoctype() {
+		return (String) CurrentObjectValues.get("doctype");
+	}
 
-    public void setCategorie(String val) {
-        setObjectValue (val, "categorie");
-    }
+	public void setDoctype(String val) {
+		setObjectValue(val, "doctype");
+	}
 
-    public  String getKeywords() {
-        return (String) CurrentObjectValues.get("keywords");
-    }
+	public String getCategorie() {
+		return (String) CurrentObjectValues.get("categorie");
+	}
 
-    public void setKeywords(String val) {
-        setObjectValue (val, "keywords");
-    }
+	public void setCategorie(String val) {
+		setObjectValue(val, "categorie");
+	}
 
-    public  String getContent() {
-        return (String) CurrentObjectValues.get("content");
-    }
+	public String getKeywords() {
+		return (String) CurrentObjectValues.get("keywords");
+	}
 
-    public void setContent(String val) {
-        setObjectValue (val, "content");
-    }
+	public void setKeywords(String val) {
+		setObjectValue(val, "keywords");
+	}
 
-    public  Integer getContent_length() {
-        return (Integer) CurrentObjectValues.get("content_length");
-    }
+	public String getContent() {
+		return (String) CurrentObjectValues.get("content");
+	}
 
-    public void setContent_length(Integer val) {
-        setObjectValue (val, "content_length");
-    }
+	public void setContent(String val) {
+		setObjectValue(val, "content");
+	}
 
-    public  String getContent_type() {
-        return (String) CurrentObjectValues.get("content_type");
-    }
+	public Integer getContent_length() {
+		return (Integer) CurrentObjectValues.get("content_length");
+	}
 
-    public void setContent_type(String val) {
-        setObjectValue (val, "content_type");
-    }
+	public void setContent_length(Integer val) {
+		setObjectValue(val, "content_length");
+	}
 
-    public  String getDomaineowner() {
-        return (String) CurrentObjectValues.get("domaineowner");
-    }
+	public String getContent_type() {
+		return (String) CurrentObjectValues.get("content_type");
+	}
 
-    public void setDomaineowner(String val) {
-        setObjectValue (val, "domaineowner");
-    }
+	public void setContent_type(String val) {
+		setObjectValue(val, "content_type");
+	}
 
-    public  String getOrganisationversante() {
-        return (String) CurrentObjectValues.get("organisationversante");
-    }
+	public String getDomaineowner() {
+		return (String) CurrentObjectValues.get("domaineowner");
+	}
 
-    public void setOrganisationversante(String val) {
-        setObjectValue (val, "organisationversante");
-    }
+	public void setDomaineowner(String val) {
+		setObjectValue(val, "domaineowner");
+	}
 
-    public  Date getDocsdate() {
-        return (Date) CurrentObjectValues.get("docsdate");
-    }
+	public String getOrganisationversante() {
+		return (String) CurrentObjectValues.get("organisationversante");
+	}
 
-    public void setDocsdate(Date val) {
-        setObjectValue (val, "docsdate");
-    }
+	public void setOrganisationversante(String val) {
+		setObjectValue(val, "organisationversante");
+	}
 
-    public  String getDescription() {
-        return (String) CurrentObjectValues.get("description");
-    }
+	public Date getDocsdate() {
+		return (Date) CurrentObjectValues.get("docsdate");
+	}
 
-    public void setDescription(String val) {
-        setObjectValue (val, "description");
-    }
+	public void setDocsdate(Date val) {
+		setObjectValue(val, "docsdate");
+	}
 
-    public  String getTitle() {
-        return (String) CurrentObjectValues.get("title");
-    }
+	public String getDescription() {
+		return (String) CurrentObjectValues.get("description");
+	}
 
-    public void setTitle(String val) {
-        setObjectValue (val, "title");
-    }
+	public void setDescription(String val) {
+		setObjectValue(val, "description");
+	}
 
-    public  String getSilo() {
-        return (String) CurrentObjectValues.get("silo");
-    }
+	public String getTitle() {
+		return (String) CurrentObjectValues.get("title");
+	}
 
-    public void setSilo(String val) {
-        setObjectValue (val, "silo");
-    }
+	public void setTitle(String val) {
+		setObjectValue(val, "title");
+	}
 
-    public  String getMailowner() {
-        return (String) CurrentObjectValues.get("mailowner");
-    }
+	public String getDomnnom() {
+		return (String) CurrentObjectValues.get("domnnom");
+	}
 
-    public void setMailowner(String val) {
-        setObjectValue (val, "mailowner");
-    }
+	public void setDomnnom(String val) {
+		setObjectValue(val, "domnnom");
+	}
 
-    public  Boolean getTransmis() {
-        return (Boolean) CurrentObjectValues.get("transmis");
-    }
+	public String getMailowner() {
+		return (String) CurrentObjectValues.get("mailowner");
+	}
 
-    public void setTransmis(Boolean val) {
-        setObjectValue (val, "transmis");
-    }
+	public void setMailowner(String val) {
+		setObjectValue(val, "mailowner");
+	}
 
-    public  String getStatut() {
-        return (String) CurrentObjectValues.get("statut");
-    }
+	public Boolean getTransmis() {
+		return (Boolean) CurrentObjectValues.get("transmis");
+	}
 
-    public void setStatut(String val) {
-        setObjectValue (val, "statut");
-    }
+	public void setTransmis(Boolean val) {
+		setObjectValue(val, "transmis");
+	}
 
-    public  String getMotif() {
-        return (String) CurrentObjectValues.get("motif");
-    }
+	public String getStatut() {
+		return (String) CurrentObjectValues.get("statut");
+	}
 
-    public void setMotif(String val) {
-        setObjectValue (val, "motif");
-    }
+	public void setStatut(String val) {
+		setObjectValue(val, "statut");
+	}
 
-    public  String getUserid() {
-        return (String) CurrentObjectValues.get("userid");
-    }
+	public String getMotif() {
+		return (String) CurrentObjectValues.get("motif");
+	}
 
-    public void setUserid(String val) {
-        setObjectValue (val, "userid");
-    }
+	public void setMotif(String val) {
+		setObjectValue(val, "motif");
+	}
 
-    private void initialize () {
-        CODOBJ = "DRAFTS";
-        setObjectValue("DRAFTS","codobj");
-        T = DRAFTS_T;
-        CLE = DRAFTS_CLE;
-        PKEY = DRAFTS_PKEY;
-    }
+	public String getUserid() {
+		return (String) CurrentObjectValues.get("userid");
+	}
+
+	public void setUserid(String val) {
+		setObjectValue(val, "userid");
+	}
+
+	public Date getDraftdate() {
+		return (Date) CurrentObjectValues.get("draftdate");
+	}
+
+	public void setDraftdate(Date val) {
+		setObjectValue(val, "draftdate");
+	}
+
+	private void initialize() {
+		CODOBJ = "DRAFTS";
+		setObjectValue("DRAFTS", "codobj");
+		CLE = DRAFTS_CLE;
+		PKEY = DRAFTS_PKEY;
+		T = DRAFTS_T;
+	}
 }

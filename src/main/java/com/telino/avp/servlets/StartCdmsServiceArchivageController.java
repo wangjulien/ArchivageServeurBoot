@@ -1,9 +1,13 @@
 package com.telino.avp.servlets;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
-import javax.annotation.Resource;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
@@ -12,9 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallbackWithoutResult;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,68 +33,75 @@ public class StartCdmsServiceArchivageController {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StartCdmsServiceArchivageController.class);
 
-	@Resource
-	private DataSource masterDynamicDs;
-
-	@Resource
-	private DataSource mirrorDynamicDs;
-
-	@Autowired
-	private TransactionTemplate transactionTemplate;
+	// @Resource
+	// private DataSource masterDynamicDs;
+	//
+	// @Resource
+	// private DataSource mirrorDynamicDs;
 
 	@Autowired
 	private SwitchDataSourceService switchDataSourceService;
 
 	// nomBase is the principal DB
-	@RequestMapping(params = { "nomBase" }, method = { RequestMethod.GET, RequestMethod.POST })
+	@SuppressWarnings("unchecked")
+	@RequestMapping(method = { RequestMethod.GET, RequestMethod.POST })
 	public void doGetAndPost(@RequestParam("nomBase") String nomBase, HttpServletRequest request,
 			HttpServletResponse response) {
 
 		try {
-			if (nomBase != null && nomBase.length() > 0) {
-				
+			if (Objects.nonNull(nomBase) && nomBase.length() > 0) {
+
 				//
 				// TODO : Switch DataSource par AOP intercepter
 				//
 				switchDataSourceService.switchDataSourceFor(nomBase);
-				
+
 				// lecture de la trame
 				CdmsApi_in trame = CdmsApiServletRequestIO.lectureCdmsObj(request);
 
-				transactionTemplate.execute(new TransactionCallbackWithoutResult() {
-					@SuppressWarnings("unchecked")
-					@Override
-					public void doInTransactionWithoutResult(TransactionStatus status) {
+				try {
+					// Get master connection by JNDI Datasource
+					Connection conn = getConnexion(nomBase);
 
-						try {
-							CdmsTransaction J = new CdmsTransaction(masterDynamicDs.getConnection(),
-									mirrorDynamicDs.getConnection());
+					// Get mirror connection similarly
+					Connection connMirror = getConnexion(
+							SwitchDataSourceService.CONTEXT_APP_PARAM.get().getMirroringurl());
 
-							CdmsApi_Out sortie = J.JavaCall(trame);
-							if (!sortie.getRetour().startsWith("0")) {
-								// Mannully declencher rollback
-								status.setRollbackOnly();
-								CdmsApiServletRequestIO.ecritureCdmsObj(response, sortie);
-								return;
-							}
-
-							ArrayList<Object> lignes = sortie.getList();
-							for (int i = 0; i < lignes.size(); i++) {
-								if (lignes.get(i) instanceof HashMap) {
-									((HashMap<String, Object>) lignes.get(i)).remove("Connection");
-									((HashMap<String, Object>) lignes.get(i)).remove("connMirror");
-								}
-								LOGGER.info((String) lignes.get(i));
-							}
-							CdmsApiServletRequestIO.ecritureCdmsObj(response, sortie);
-						} catch (Exception e) {
-							LOGGER.error("erreur servlet startCdmsService" + e.getMessage());
-							throw new RuntimeException(e);
-						}
+					if (Objects.isNull(conn) || Objects.isNull(connMirror)) {
+						LOGGER.error("8 Pas de connexion disponible");
+						CdmsApi_Out sortie = new CdmsApi_Out();
+						sortie.setRetour("9");
+						CdmsApiServletRequestIO.ecritureCdmsObj(response, sortie);
+						return;
 					}
-				});
 
+					CdmsTransaction J = new CdmsTransaction(conn, connMirror);
+
+					CdmsApi_Out sortie = J.JavaCall(trame);
+					if (!sortie.getRetour().startsWith("0")) {
+						// Mannully declencher rollback
+						invcommit(conn, connMirror);
+						CdmsApiServletRequestIO.ecritureCdmsObj(response, sortie);
+						return;
+					}
+
+					commit(conn, connMirror);
+
+					ArrayList<Object> lignes = sortie.getList();
+					for (int i = 0; i < lignes.size(); i++) {
+						if (lignes.get(i) instanceof HashMap) {
+							((HashMap<String, Object>) lignes.get(i)).remove("Connection");
+							((HashMap<String, Object>) lignes.get(i)).remove("connMirror");
+						}
+						LOGGER.info(lignes.get(i).toString());
+					}
+					CdmsApiServletRequestIO.ecritureCdmsObj(response, sortie);
+				} catch (Exception e) {
+					LOGGER.error("erreur servlet startCdmsService" + e.getMessage());
+					throw new RuntimeException(e);
+				}
 			}
+
 		} catch (Exception e) {
 			LOGGER.error("erreur servlet startCdmsService");
 			CdmsApi_Out sortie = new CdmsApi_Out();
@@ -104,6 +112,66 @@ public class StartCdmsServiceArchivageController {
 				LOGGER.error("erreur d'ecrire une reponse pour startCdmsAnalysis" + ee.getMessage());
 			}
 		}
+	}
+
+	/*
+	 * Commit et rollback
+	 */
+	private boolean commit(final Connection conn, final Connection connMirror) {
+		try {
+			conn.commit();
+			conn.close();
+			LOGGER.info(" committ effectué", "nfz42013");
+			if (connMirror != null) {
+				connMirror.commit();
+				LOGGER.info(" committ mirror effectué", "nfz42013");
+				connMirror.close();
+			}
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			// Disconnect();
+		}
+		return true;
+
+	}
+
+	private boolean invcommit(final Connection conn, final Connection connMirror) {
+		try {
+			conn.rollback();
+			conn.close();
+			if (connMirror != null) {
+				connMirror.rollback();
+				connMirror.close();
+			}
+			LOGGER.error(" rollback effectué", "nfz42013");
+			// Disconnect();
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		// Disconnect();
+		return false;
+	}
+
+	private Connection getConnexion(String nomBase) {
+		Connection conn = null;
+		try {
+			Context initCtx = new InitialContext();
+			String lookupString = nomBase;
+			if (lookupString != null)
+				lookupString = "java:comp/env/jdbc/" + lookupString;
+			else
+				lookupString = "java:comp/env/jdbc/coriolis";
+			DataSource ds = (DataSource) initCtx.lookup(lookupString);
+			conn = ds.getConnection();
+			conn.setAutoCommit(false); // pas d'autocommit
+			conn.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
+		} catch (Exception e) {
+			System.err.println(Thread.currentThread().getId() + " CONNECT Z " + e.getMessage());
+		}
+
+		return conn;
 	}
 
 }

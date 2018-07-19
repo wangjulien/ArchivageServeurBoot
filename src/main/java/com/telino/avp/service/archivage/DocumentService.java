@@ -37,6 +37,7 @@ import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.DraftDao;
 import com.telino.avp.dao.ProfileDao;
 import com.telino.avp.dao.UserDao;
+import com.telino.avp.entity.archive.Depot;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Draft;
 import com.telino.avp.entity.archive.EncryptionKey;
@@ -1016,7 +1017,7 @@ public class DocumentService {
 
 				// assign default Profile id
 				if (Objects.isNull(input.get("par_id"))) {
-					input.put("par_id", defaultParRight.getProfile().getParId().toString());
+					input.put("par_id", defaultParRight.getProfile().getParId());
 				}
 
 				return true;
@@ -1175,7 +1176,8 @@ public class DocumentService {
 			byte[] content = new byte[0];
 			if (storeFromAVP) {
 				content = (byte[]) result.get("content");
-				docsdate = TamponHorodatageService.convertToSystemZonedDateTime((Date) result.get("docsdate"));
+				// From AVP : from the docsdate of Draft. Already in ZonedDateTime type
+				docsdate = (ZonedDateTime) result.get("docsdate");
 			} else if (input.get("$FROMAVP").equals("NO")) {
 				content = Base64.getDecoder().decode((String) input.get("content"));
 				docsdate = TamponHorodatageService.convertToSystemZonedDateTime((Date) input.get("docsdate"));
@@ -1223,9 +1225,11 @@ public class DocumentService {
 			document.setDomaineowner((String) result.get("domainowner"));
 			document.setDescription((String) result.get("description"));
 			document.setArchiverMail((String) input.get("mailid"));
-			document.setProfile(profileDao.findByParId(Integer.valueOf((String) input.get("par_id"))));
+			document.setProfile(profileDao.findByParId((Integer) input.get("par_id")));
 			if (Objects.nonNull(input.get("iddepot"))) {
-				document.setDepot(depotDao.findByDepotId(UUID.fromString((String) input.get("iddepot"))));
+				Depot depot = new Depot();
+				depot.setIdDepot(UUID.fromString((String) input.get("iddepot")));
+				document.setDepot(depot);
 			}
 			document.setElasticid((String) input.get("elasticid"));
 			document.setDomnNom((String) input.get("domnnom"));

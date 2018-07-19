@@ -25,6 +25,7 @@ import com.telino.avp.dao.ParamDao;
 import com.telino.avp.dto.DocumentDto;
 import com.telino.avp.entity.archive.Chiffrement;
 import com.telino.avp.entity.archive.Document;
+import com.telino.avp.entity.archive.Empreinte;
 import com.telino.avp.entity.archive.EncryptionKey;
 import com.telino.avp.entity.param.Param;
 import com.telino.avp.exception.AvpExploitException;
@@ -156,6 +157,8 @@ public class FsStorageService extends AbstractStorageService {
 
 		// Valoriser les empreintes
 		try {
+			if (Objects.isNull(document.getEmpreinte())) document.setEmpreinte(new Empreinte());
+			
 			document.getEmpreinte().setEmpreinteInterne(documentService.computeTelinoPrint(document));
 			document.getEmpreinte().setEmpreinte(documentService.computePrint(document));
 		} catch (AvpExploitException e) {

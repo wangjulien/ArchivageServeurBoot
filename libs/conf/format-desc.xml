@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- last maj : 2013/06/12 author : boumda@cines.fr -->
+<description>
+	<formatList>
+
+		<item id="AAC/AAC">
+			<longName>Advanced Audio Codings</longName>
+			<link name="wiki AAC" href="http://fr.wikipedia.org/wiki/Advanced_Audio_Coding" />
+			
+			<ext>m4a</ext>
+			<note>format Mpeg-4 contenant uniquement un flux audio au format aac</note>
+		</item>
+		<item id="PCM">
+			<link name="wiki PCM" href="http://fr.wikipedia.org/wiki/Modulation_d%27impulsion_cod%C3%A9e" />
+		</item>
+
+		<item id="AIFF/PCM">
+			<longName>Audio Interchange File Format</longName>
+			<link name="wiki AIFF" href="http://fr.wikipedia.org/wiki/Audio_Interchange_File_Format/" />
+			<pronom></pronom>
+			<ext>aiff,aif</ext>
+			<note>format audio contenant uniquement un flux PCM </note>
+		</item>
+
+		<item id="FLAC/FLAC">
+			<longName>Free Lossless Audio Codect</longName>
+			<link name="sourceforge de flac"  href="http://flac.sourceforge.net/" />
+			<ext>flac</ext>
+			<note>format audio compressé sans perte</note>
+		</item>
+		
+		<!-- Added by boumda@cines.fr on 12/06/2013 -->
+		<item id="GeoTIFF">
+			<longName>Geographic Tagged Image File Format </longName>
+			<ext>tif, tiff</ext>
+			<note>format TIFF contenant des informations de géoréférencement et géolocalisation</note>
+		</item>
+
+		<item id="GIF/87a">
+			<link name="spécifications" href="http://www.w3.org/Graphics/GIF/spec-gif87.txt" />
+		</item>
+
+		<item id="GIF/89a">
+			<link name="spécifications"  href="http://www.w3.org/Graphics/GIF/spec-gif89a.txt" />
+		</item>
+
+		<item id="GIF">
+			<longName>Graphics Interchange Format</longName>
+			<link name="wiki"  href="http://fr.wikipedia.org/wiki/Graphics_Interchange_Format" />
+			<ext>gif</ext>
+			<note>format image pouvant contenir egalement des animations</note>
+		</item>
+		
+			<item id="HDF\5">
+			<longName>Hierarchical Data Format</longName>
+			<link name="hdfGroup" href="http://www.hdfgroup.org/HDF5/" />
+			<ext>h5</ext>
+			<note>format de données à caractère scientifique</note>
+		</item>
+
+		<item id="HTML/4.01">
+			<link name="spécification" href="http://www.w3.org/TR/html401/" />
+		</item>
+
+		<item id="HTML/4.0">
+			<link  name="spécification"  href="http://www.w3.org/TR/1998/REC-html40-19980424/" />
+		</item>
+
+		<item id="HTML/3.2">
+			<link  name="spécification"  href="http://www.w3.org/TR/REC-html32" />
+		</item>
+
+		<item id="HTML">
+			<longName>Hypertext Markup language</longName>
+			<link  name="site du w3c"  href="http://www.w3.org/html/" />
+			<ext>html, htm</ext>
+		</item>
+
+		<item id="JPEG">
+			<longName>Joint Photographic Experts Group</longName>
+			<link  name="site Jpeg"  href="http://www.jpeg.org/" />
+			<note>format de représentation compressée d'une image fixe.</note>
+		</item>
+
+		<!-- Added by boumda@cines.fr on 12/06/2013 -->
+		<item id="JP2">
+			<longName>JPEG 2000</longName>
+			<note>extension du format JPEG standard</note>
+			<ext>jpx, jpf</ext>
+		</item>
+		
+		<item id="MKV/AVC/FLAC">
+			<longName>Matroska</longName>
+			<ext>mkv</ext>
+			<note>conteneur matroska contenant un flux video h.264 (ou appelé egalement avc) et un flux
+				audio au format flac uniquement</note>
+		</item>
+
+		<item id="MPEG-4/AVC/AAC">
+			<longName>Moving Picture Experts Group</longName>
+			<link name="site mpeg4" href="http://www.mpeg4.net/" />
+			<ext>mp4, m4v, m4p, 3gpp, 3gp, 3gpp2, 3g2, k3g, jpm, jp</ext>
+						<note>conteneur au format MPEG-4 contenant un flux video h.264 (ou appelé également avc) et un flux
+				audio au format aac uniquement</note>
+		</item>
+
+		<item id="MPEG-4/AVC">
+			<longName>Moving Picture Experts Group</longName>
+			<link name="site du Mpeg 4" href="http://www.mpeg4.net/" />
+			<ext>mp4, m4v, m4p, 3gpp, 3gp, 3gpp2, 3g2, k3g, jpm, jp</ext>
+			<note>conteneur au format MPEG-4 contenant un flux video h.264 (ou appelé egalement avc) sans aucun autre flux</note>
+		</item>
+
+		<item id="ODT">
+			<longName>Open Document Texte</longName>
+			<link name="wiki" href="http://fr.wikipedia.org/wiki/OpenDocument" />
+			<ext>odt,doc</ext>
+			<note>format ouvert de données de document textuel</note>
+		</item>
+
+		<item id="OGG/THEORA/VORBIS">
+			<link name="site de vorbis" href="http://www.vorbis.com/" />
+			<note>fichier au format conteneur ogg contenant un flux video au format Theora et un flux audio au format Vorbis</note>
+		</item>
+		<item id="PDF/1.2" />
+		<item id="PDF/1.3" />
+		<item id="PDF/1.4" />
+		<item id="PDF/1.6" />
+
+		<item id="PDF/1.5">
+			<link name="spécification" href="http://partners.adobe.com/public/developer/en/pdf/PDFReference15_v6.pdf" />
+		</item>
+
+		<item id="PDF/1.7" />
+
+		<item id="PDF">
+			<longName>Portable Document Format</longName>
+			<ext>pdf</ext>
+			<link name="site de adobe" href="http://www.adobe.com/fr/products/reader/" />
+		</item>
+
+		<item id="PNG\1.0">
+			<link name="spécification" href="http://tools.ietf.org/html/rfc2083" />
+		</item>
+
+		<item id="PNG\1.1" />
+		<item id="PNG\1.2" />
+
+		<item id="PNG">
+			<longName>Portable Network Graphics,</longName>
+			<ext>png</ext>
+			<link name="site du PNG" href="http://www.w3.org/TR/PNG/" />
+			<note> format ouvert d’images numériques,</note>
+		</item>
+
+		<item id="SIARD">
+			<longName>Software Independent Archival of Relational Databases</longName>
+			<ext>siard</ext>
+			<link name="siard" href="http://www.bar.admin.ch/dienstleistungen/00823/00825/index.html?lang=fr" />
+		</item>
+
+		<item id="SVG">
+			<longName>Scalable Vector Graphics</longName>
+			<ext>svg</ext>
+			<link name="site du w3c" href="http://www.w3.org/Graphics/SVG/" />
+			<note>format de données conçu pour décrire des ensembles de graphiques vectoriels et basé sur XML.</note>
+		</item>
+
+		<item id="SVG/1.0">
+			<longName>Scalable Vector Graphics</longName>
+			<link name="spécification"  href="http://www.w3.org/TR/SVG10/" />
+		</item>		
+		
+		<item id="SVG/1.1">
+			<longName>Scalable Vector Graphics</longName>
+			<link  name="spécification"  href="http://www.w3.org/TR/SVG11/" />
+		</item>
+
+		<item id="TIFF/4.0" />
+		<item id="TIFF/5.0" />
+		<item id="TIFF/6.0">
+			<link name="spécification"   href="http://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf" />
+			<note></note>
+		</item>
+
+		<item id="TIFF">
+			<longName>Tagged Interchange File Forma</longName>
+			<ext>tiff,tif</ext>
+			<link  name="spécification"  href="http://partners.adobe.com/public/developer/tiff/index.html" />
+		</item>
+
+		<item id="TXT/ASCII">
+			<longName>American Standard Code for Information Interchange
+			</longName>
+			<link name="wiki"	href="http://fr.wikipedia.org/wiki/American_Standard_Code_for_Information_Interchange" />
+		</item>
+
+		<item id="TXT/UTF-8">
+			<longName>UCS transformation format 8 bits</longName>
+			<link  name="wiki"  href="http://fr.wikipedia.org/wiki/UTF-8" />
+		</item>
+
+		<item id="PCM">
+			<link 	 name="wiki" 	href="http://fr.wikipedia.org/wiki/Modulation_d%27impulsion_cod%C3%A9e" />
+		</item>
+
+		<item id="WAV">
+			<link  name="wiki" href="http://fr.wikipedia.org/wiki/WAVEform_audio_format" />
+		</item>
+
+		<item id="XML/1.1">
+			<link  name="spécification" href="http://www.w3.org/TR/2006/REC-xml11-20060816/" />
+		</item>
+
+		<item id="XML/1.0">
+			<link  name="spécification"  href="http://www.w3.org/TR/2008/REC-xml-20081126/" />
+		</item>
+
+		<item id="XML">
+			<longName>Extensible Markup Language</longName>
+			<ext>xml,ent</ext>
+			<link href="http://fr.wikipedia.org/wiki/Extensible_Markup_Language" />
+		</item>		
+		
+		<!-- Added by boumda@cines.fr on : 12/06/2013 -->
+		<item id="XDMF">
+			<longName>eXtensible Data Model and Format</longName>
+			<ext>xmf</ext>
+			<link href="http://www.xdmf.org/"/>
+		</item>
+		
+	<item id="WAV/PCM">
+		<longName>WAVEform audio file format</longName>
+		<link name="librairie du conrgès" href="http://www.digitalpreservation.gov/formats/fdd/fdd000001.shtml" />
+		<note>contenant uniquement un flux PCM</note>
+		</item>
+	</formatList>
+
+	<modules>
+		<item id="MediaInfo">
+			<link  name="site de mplayer"  href="http://www.mplayerhq.hu/design7/news.html" />
+		</item>
+
+		<item id="MPlayer">
+			<link name="site de media" href="http://mediainfo.sourceforge.net/fr" />
+		</item>
+
+	</modules>
+</description>

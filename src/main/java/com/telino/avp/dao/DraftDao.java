@@ -100,7 +100,7 @@ public class DraftDao {
 		Draft draft = masterDraftRepository.findById(draftid).orElseThrow(EntityNotFoundException::new);
 
 		draft.setTransmis(false);
-		draft.setStatut(statut);
+		draft.setStatut(statut.toString());
 		draft.setMotif(motif);
 		draft.setArchiveId(docid);
 		draft.setDraftdate(ZonedDateTime.now());
@@ -160,7 +160,7 @@ public class DraftDao {
 		if (input.get("transmis") != null)
 			draft.setTransmis((Boolean) input.get("transmis"));
 		if (input.get("statut") != null)
-			draft.setStatut(DraftStatut.valueOf((String) input.get("statut")));
+			draft.setStatut((String) input.get("statut"));
 		if (input.get("motif") != null)
 			draft.setMotif((String) input.get("motif"));
 		if (input.get("draftdate") != null)

@@ -26,6 +26,7 @@
 		<!-- Version Hibernate specified here, for the bug of Share PK using @MapsId 
 			existing after this version -->
 		<hibernate.version>5.2.13.Final</hibernate.version>
+		<openoffice.version>4.1.2</openoffice.version>
 		<bouncycastle.version>1.59</bouncycastle.version>
 		<itextpdf.version>5.5.13</itextpdf.version>
 		<verapdf.version>1.12.1</verapdf.version>
@@ -78,12 +79,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-logging</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -98,13 +93,13 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<scope>runtime</scope>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.springframework/spring-instrument -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-instrument</artifactId>
 		</dependency>
 
 		<dependency>
@@ -138,12 +133,66 @@
 			<version>1.2.17</version>
 		</dependency>
 
+
+		<dependency>
+			<groupId>com.sun.mail</groupId>
+			<artifactId>javax.mail</artifactId>
+		</dependency>
+
+		<!-- =================== Open Office ================== -->
+		<!-- https://mvnrepository.com/artifact/org.openoffice/juh -->
+		<dependency>
+			<groupId>org.openoffice</groupId>
+			<artifactId>juh</artifactId>
+			<version>${openoffice.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.openoffice/jurt -->
+		<dependency>
+			<groupId>org.openoffice</groupId>
+			<artifactId>jurt</artifactId>
+			<version>${openoffice.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.openoffice/ridl -->
+		<dependency>
+			<groupId>org.openoffice</groupId>
+			<artifactId>ridl</artifactId>
+			<version>${openoffice.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.openoffice/unoil -->
+		<dependency>
+			<groupId>org.openoffice</groupId>
+			<artifactId>unoil</artifactId>
+			<version>${openoffice.version}</version>
+		</dependency>
+		
+		<!-- http://mvnrepository.com/artifact/org.apache.poi/poi-scratchpad -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-scratchpad</artifactId>
+			<version>3.14</version>
+		</dependency>
+		<!-- http://mvnrepository.com/artifact/org.apache.poi/poi-ooxml -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>3.14</version>
+		</dependency>
+		<!-- http://mvnrepository.com/artifact/fr.opensagres.xdocreport/org.apache.poi.xwpf.converter.pdf -->
+		<dependency>
+			<groupId>fr.opensagres.xdocreport</groupId>
+			<artifactId>org.apache.poi.xwpf.converter.pdf</artifactId>
+			<version>1.0.6</version>
+		</dependency>
+
+		<!-- =================== Horodatage ================== -->
 		<!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on -->
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk15on</artifactId>
 			<version>${bouncycastle.version}</version>
 		</dependency>
+
+		<!-- =================== Formate validator ================== -->
 
 		<!-- https://mvnrepository.com/artifact/com.itextpdf/itextpdf -->
 		<dependency>
@@ -158,10 +207,10 @@
 			<artifactId>validation-model</artifactId>
 			<version>${verapdf.version}</version>
 		</dependency>
-		
+
 		<dependency>
-			<groupId>com.sun.mail</groupId>
-			<artifactId>javax.mail</artifactId>
+			<groupId>xml-apis</groupId>
+			<artifactId>xml-apis</artifactId>
 		</dependency>
 
 		<dependency>
@@ -176,8 +225,57 @@
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
-		<!-- =============================================== CDMSAPI DEPENDENCIES 
-			================================================ -->
+		<!-- Used by cines -->
+		<!-- https://mvnrepository.com/artifact/uk.gov.nationalarchives/droid-results -->
+		<dependency>
+			<groupId>uk.gov.nationalarchives</groupId>
+			<artifactId>droid</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>xerces</groupId>
+			<artifactId>xercesImpl</artifactId>
+			<version>2.11.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.iso_relax.verifier.jaxp.validation</groupId>
+			<artifactId>isorelax-jaxp-bridge</artifactId>
+			<version>1.0</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/jdom/jdom  (XML Processing) -->
+		<dependency>
+			<groupId>jdom</groupId>
+			<artifactId>jdom</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.itextpdf/itextpdf (JAVA-PDF LIBRARY)-->
+		<dependency>
+			<groupId>com.lowagie</groupId>
+			<artifactId>itext</artifactId>
+			<version>4.2.1</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>edu.harvard.hul.ois.jhove</groupId>
+			<artifactId>jhove</artifactId>
+			<version>1.11</version>
+		</dependency>
+		<dependency>
+			<groupId>edu.harvard.hul.ois.jhove</groupId>
+			<artifactId>jhove-handler</artifactId>
+			<version>1.11</version>
+		</dependency>
+		<dependency>
+			<groupId>edu.harvard.hul.ois.jhove</groupId>
+			<artifactId>jhove-module</artifactId>
+			<version>1.11</version>
+		</dependency>
+
+		<!-- ================= CDMSAPI DEPENDENCIES ========================= -->
+
 		<dependency>
 			<groupId>com.gdsofts</groupId>
 			<artifactId>cdmsapi</artifactId>
@@ -188,6 +286,24 @@
 			<groupId>com.gdsofts</groupId>
 			<artifactId>cdmsserveur</artifactId>
 			<version>1.0.1-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.gdsofts</groupId>
+			<artifactId>core-renderer</artifactId>
+			<version>1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.gdsofts</groupId>
+			<artifactId>jodconverter-core</artifactId>
+			<version>3.0-beta-4</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.gdsofts</groupId>
+			<artifactId>jodconverterbeta</artifactId>
+			<version>3.0-beta-4-jahia2</version>
 		</dependency>
 
 	</dependencies>
@@ -206,6 +322,30 @@
 				<configuration>
 					<skipTests>false</skipTests>
 				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<!-- <version>3.1.0</version> -->
+				<executions>
+					<execution>
+						<id>copy-resources</id>
+						<!-- here the phase you need -->
+						<phase>validate</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${basedir}/target/archivageserveur/WEB-INF/lib/conf</outputDirectory>
+							<resources>
+								<resource>
+									<directory>libs/conf</directory>
+									<filtering>true</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

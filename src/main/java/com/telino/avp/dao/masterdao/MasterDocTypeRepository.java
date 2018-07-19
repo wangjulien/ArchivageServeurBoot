@@ -8,5 +8,5 @@ import com.telino.avp.entity.context.DocType;
 
 public interface MasterDocTypeRepository extends JpaRepository<DocType, Integer> {
 
-	public Optional<DocType> findByDocTypeArchivageAndCategorie(String docType, String categorie);
+	public Optional<DocType> findByDocTypeArchivageDocTypeArchivageAndCategorie(String docType, String categorie);
 }

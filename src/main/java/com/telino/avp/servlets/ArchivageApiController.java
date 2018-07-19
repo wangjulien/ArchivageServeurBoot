@@ -72,12 +72,12 @@ public class ArchivageApiController {
 					// TODO : Switch DataSource par AOP intercepter
 					//
 					switchDataSourceService.switchDataSourceFor(mybase);
-					result.put("codeRetour", ReturnCode.OK);
+					result.put("codeRetour", ReturnCode.OK.toString());
 
 					LOGGER.info(" Réinit effectué - nfz42013");
 				} catch (PersistenceException e) {
 					LOGGER.error(e.getMessage());
-					result.put("codeRetour", ReturnCode.KO);
+					result.put("codeRetour", ReturnCode.KO.toString());
 					result.put("message", e.getMessage());
 				}
 
@@ -123,13 +123,17 @@ public class ArchivageApiController {
 
 			//
 			// TODO : Switch DataSource par AOP intercepter
-			//			
-			switchDataSourceService.switchDataSourceFor(header.get("nomBase") == null ? "" : header.get("nomBase").toString());
+			//
+			switchDataSourceService
+					.switchDataSourceFor(header.get("nomBase") == null ? "" : header.get("nomBase").toString());
 
-			UUID idDepot = null;
+			Depot depot = null;
 			if (Commande.STORE.toString().equals((String) header.get("command"))) {
-
-				idDepot = UUID.randomUUID();
+				depot = new Depot();
+				depot.setIdDepot(UUID.randomUUID());
+				depot.setDemandeur(demandeur);
+				depot.setHorodatage(ZonedDateTime.now());
+				depotDao.saveDepot(depot);
 			}
 
 			Map<String, Object> result = new HashMap<>();
@@ -140,7 +144,7 @@ public class ArchivageApiController {
 				for (int i = 0; i < bigRequest.size(); i++) {
 					trame = bigRequest.get(i);
 					if (Commande.STORE.toString().equals((String) header.get("command")))
-						trame.put("iddepot", idDepot.toString());
+						trame.put("iddepot", depot.getIdDepot().toString());
 
 					// API actions
 					result = archivageApis.execApi(trame);
@@ -150,13 +154,9 @@ public class ArchivageApiController {
 
 						// TODO : rollBack(conn, connMirror, false);
 
-						// Persist a Depot object
-						Depot depot = new Depot();
-						depot.setIdDepot(idDepot);
-						depot.setDemandeur(demandeur);
+						// Update a Depot object
 						depot.setStatus((String) result.get("codeRetour"));
 						depot.setMessage((String) result.get("message"));
-						depot.setHorodatage(ZonedDateTime.now());
 
 						depotDao.saveDepot(depot);
 
@@ -166,15 +166,11 @@ public class ArchivageApiController {
 				}
 
 				if (Commande.STORE.toString().equals((String) header.get("command"))) {
-					result.put("iddepot", idDepot.toString());
+					result.put("iddepot", depot.getIdDepot().toString());
 
-					// Persist a Depot object
-					Depot depot = new Depot();
-					depot.setIdDepot(idDepot);
-					depot.setDemandeur(demandeur);
+					// update a Depot object
 					depot.setStatus(ReturnCode.OK.toString());
 					depot.setMessage(ReturnCode.OK.getDepotMessage());
-					depot.setHorodatage(ZonedDateTime.now());
 
 					depotDao.saveDepot(depot);
 				}
@@ -183,7 +179,7 @@ public class ArchivageApiController {
 
 			} else {
 				if (Commande.STORE.toString().equals((String) header.get("command")))
-					trame.put("iddepot", idDepot.toString());
+					trame.put("iddepot", depot.getIdDepot().toString());
 
 				Map<String, Object> printObject = new HashMap<>();
 				if (trame.containsKey("content")) {
@@ -206,12 +202,21 @@ public class ArchivageApiController {
 				CdmsApiServletRequestIO.ecriture(response, result, isMap);
 
 				// TODO : gestion de transaction
-				// if (ReturnCode.OK.toString().equals(result.get("codeRetour")) ) {
-				// commit(conn, connMirror);
-				// } else {
-				// rollBack(conn, connMirror, true);
-				//
-				// }
+				if (ReturnCode.OK.toString().equals(result.get("codeRetour"))) {
+					// Persist a Depot object
+					if (Commande.STORE.toString().equals((String) header.get("command"))) {
+						depot.setStatus(ReturnCode.OK.toString());
+						depot.setMessage(ReturnCode.OK.getDepotMessage());
+						depotDao.saveDepot(depot);
+					}
+				} else {
+					// Persist a Depot object
+					if (Commande.STORE.toString().equals((String) header.get("command"))) {
+						depot.setStatus((String) result.get("codeRetour"));
+						depot.setMessage((String) result.get("message"));
+						depotDao.saveDepot(depot);
+					}
+				}
 
 				LOGGER.info("Command " + header.get("command") + " ends");
 			}

@@ -48,8 +48,7 @@ public class Draft {
 	private String mailowner;
 	private Boolean transmis;
 	
-	@Enumerated(EnumType.STRING)
-	private DraftStatut statut;
+	private String statut;
 	
 	private String motif;
 	private String userid;
@@ -188,11 +187,11 @@ public class Draft {
 		this.transmis = transmis;
 	}
 
-	public DraftStatut getStatut() {
+	public String getStatut() {
 		return statut;
 	}
 
-	public void setStatut(DraftStatut statut) {
+	public void setStatut(String statut) {
 		this.statut = statut;
 	}
 

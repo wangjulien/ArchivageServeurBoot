@@ -35,7 +35,7 @@ import com.telino.avp.utils.Sha;
 public class UserProfileRightService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(UserProfileRightService.class);
-	
+
 	@Autowired
 	private UserDao userDao;
 
@@ -137,9 +137,10 @@ public class UserProfileRightService {
 					Objects.isNull(pr.isParCanRestitute()) ? false : pr.isParCanRestitute());
 
 			// Add all docTypes
-			String docTypes = profile.getDocTypes().stream()
-					.map(dt -> dt.getDocTypeArchivage().getDocTypeArchivage() + "-" + dt.getCategorie())
-					.collect(Collectors.joining(","));
+			String docTypes = profile.getDocTypes().stream().map(dt -> 
+				dt.getDocTypeArchivage().getDocTypeArchivage() + (Objects.isNull(dt.getCategorie()) ? "" : "-" + dt.getCategorie())
+			).collect(Collectors.joining(","));
+			
 			documents.put(parId, docTypes);
 		}
 
@@ -198,7 +199,7 @@ public class UserProfileRightService {
 		try {
 			if (ServerProc.password1 == null && input.get("password1") != null) {
 				String password1 = (String) input.get("password1");
-				
+
 				ReturnCode codeRetour = checkPasswordServer(1, password1);
 
 				if (ReturnCode.OK == codeRetour) {
@@ -212,10 +213,10 @@ public class UserProfileRightService {
 					return;
 				}
 			}
-			
+
 			if (ServerProc.password2 == null && input.get("password2") != null) {
 				String password2 = (String) input.get("password2");
-				
+
 				ReturnCode codeRetour = checkPasswordServer(2, password2);
 
 				if (ReturnCode.OK == codeRetour) {

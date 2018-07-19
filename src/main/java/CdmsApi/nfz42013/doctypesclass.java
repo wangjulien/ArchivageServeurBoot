@@ -1,80 +1,92 @@
 package CdmsApi.nfz42013;
 
 import java.sql.Connection;
+
 import CdmsApi.types.TypeJAV;
 
 public class doctypesclass extends TypeJAV {
 
-    public doctypesclass () {
-        super ();
-        initialize ();
-    }
+	public doctypesclass() {
+		super();
+		initialize();
+	}
 
-    public doctypesclass (Connection conn, boolean b) {
-        super (conn, b);
-        initialize ();
-    }
+	public doctypesclass(Connection conn, boolean b) {
+		super(conn, b);
+		initialize();
+	}
 
+	protected class CLE {
+		public Integer doctypeid;
+		public final String F = "S005";
+	}
 
-    protected class T {
-        public Integer doctypeid;
-        public String doctype_archivage;
-        public String categorie;
-        public String keywordslist;
-        public final String F = "S005A030A030A900";
-    }
-    protected T doctypes_T = new T();
+	protected CLE doctypes_CLE = new CLE();
 
-    protected class CLE {
-        public Integer doctypeid;
-        public final String F = "S005";
-    }
-    protected CLE doctypes_CLE = new CLE();
+	protected class PKEY {
+		public Integer doctypeid;
+		public final String F = "S005";
+	}
 
-    protected class PKEY {
-        public Integer doctypeid;
-        public final String F = "S005";
-    }
-    protected PKEY doctypes_PKEY = new PKEY();
+	protected PKEY doctypes_PKEY = new PKEY();
 
-    public  Integer getDoctypeid() {
-        return (Integer) CurrentObjectValues.get("doctypeid");
-    }
+	protected class T {
+		public Integer doctypeid;
+		public String doctype_archivage;
+		public String categorie;
+		public String keywordslist;
+		public Integer par_id;
+		public final String F = "S005A030A030A900S005";
+	}
 
-    public void setDoctypeid(Integer val) {
-        setObjectValue (val, "doctypeid");
-    }
+	protected T doctypes_T = new T();
 
-    public  String getDoctype_archivage() {
-        return (String) CurrentObjectValues.get("doctype_archivage");
-    }
+	public Integer getDoctypeid() {
+		return (Integer) CurrentObjectValues.get("doctypeid");
+	}
 
-    public void setDoctype_archivage(String val) {
-        setObjectValue (val, "doctype_archivage");
-    }
+	public void setDoctypeid(Integer val) {
+		setObjectValue(val, "doctypeid");
+	}
 
-    public  String getCategorie() {
-        return (String) CurrentObjectValues.get("categorie");
-    }
+	public String getDoctype_archivage() {
+		return (String) CurrentObjectValues.get("doctype_archivage");
+	}
 
-    public void setCategorie(String val) {
-        setObjectValue (val, "categorie");
-    }
+	public void setDoctype_archivage(String val) {
+		setObjectValue(val, "doctype_archivage");
+	}
 
-    public  String getKeywordslist() {
-        return (String) CurrentObjectValues.get("keywordslist");
-    }
+	public String getCategorie() {
+		return (String) CurrentObjectValues.get("categorie");
+	}
 
-    public void setKeywordslist(String val) {
-        setObjectValue (val, "keywordslist");
-    }
+	public void setCategorie(String val) {
+		setObjectValue(val, "categorie");
+	}
 
-    private void initialize () {
-        CODOBJ = "doctypes";
-        setObjectValue("doctypes","codobj");
-        T = doctypes_T;
-        CLE = doctypes_CLE;
-        PKEY = doctypes_PKEY;
-        DUPLICATE = true;
-    }
+	public String getKeywordslist() {
+		return (String) CurrentObjectValues.get("keywordslist");
+	}
+
+	public void setKeywordslist(String val) {
+		setObjectValue(val, "keywordslist");
+	}
+
+	public Integer getPar_id() {
+		return (Integer) CurrentObjectValues.get("par_id");
+	}
+
+	public void setPar_id(Integer val) {
+		setObjectValue(val, "par_id");
+	}
+
+	private void initialize() {
+		CODOBJ = "doctypes";
+		setObjectValue("doctypes", "codobj");
+		CLE = doctypes_CLE;
+		PKEY = doctypes_PKEY;
+		T = doctypes_T;
+		DUPLICATE = true;
+	}
 }

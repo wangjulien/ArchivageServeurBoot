@@ -10,7 +10,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.instrument.classloading.InstrumentationLoadTimeWeaver;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -22,14 +24,27 @@ import com.telino.avp.config.multids.DataSourceConfig.DsConfigObject;
 @EnableScheduling
 @EnableAsync
 @EnableWebMvc
+//@EnableSpringConfigured
+//@EnableLoadTimeWeaving(aspectjWeaving = AspectJWeaving.ENABLED)
 public class ArchivageServeurBootApplication {
+	
+	public static ApplicationContext SPRING_CONTEXT;
 
 	@Autowired
 	private DataSourceConfig dataSourceConfig;
+	
+	@Autowired
+	private ApplicationContext context;
 
 	public static void main(String[] args) {
-		SpringApplication.run(ArchivageServeurBootApplication.class, args);
+		SpringApplication.run(ArchivageServeurBootApplication.class, args);		
 	}
+	
+	@Bean
+    public InstrumentationLoadTimeWeaver loadTimeWeaver() throws Throwable {
+		ArchivageServeurBootApplication.SPRING_CONTEXT = context;
+        return new InstrumentationLoadTimeWeaver();
+    }
 
 	@Bean
 	public TomcatServletWebServerFactory tomcatFactory() {

@@ -29,7 +29,7 @@ public class DocTypeDao {
 	}
 
 	public DocType findByDocTypeArchivageAndCategorie(final String docType, final String categorie) {
-		return masterDocTypeRepository.findByDocTypeArchivageAndCategorie(docType, categorie)
+		return masterDocTypeRepository.findByDocTypeArchivageDocTypeArchivageAndCategorie(docType, categorie)
 				.orElseThrow(EntityNotFoundException::new);
 	}
 

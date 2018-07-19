@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<parser-date-pattern>
+ <locales>
+  <locale language="fr" country="FR" />
+  <locale language="de" country="DE" />
+  <locale language="en" country="US" />
+  <locale language="it" country="IT" />
+ </locales>
+ <date-patterns>
+  <item>EEE MMM dd HH:mm:ss yyyy</item>
+  <item>EEEE dd MMM yyyy HH:mm</item>
+  <item>EEEE dd MMMM yyyy HH:mm</item>
+  <item>H:mm M/dd/yyyy</item>
+  <item>dd mm yyyy</item>
+  <item>dd.MM.yy</item>
+  <item>yyyy.MM.dd G 'at' hh:mm:ss z</item>
+  <item>EEE, MMM d, ''yy", "h:mm a</item>
+  <item>H:mm:ss:SSS", "K:mm a,z</item>
+  <item>yyyy.MMMMM.dd GGG hh:mm aaa</item>
+  <item>EEE dd MMM yyyy</item>
+  <item>HH:mm:ss yy/dd/MM</item>
+  <item>(H:mm EEE dd MMM yyyy)</item> 
+  <item>(MM/dd/yyyy h:mm:ss)</item>
+  <item>(EEEE,MMMM dd yyyy hh:mm:ss)</item>
+  <item>(D:yyyyMMddHHmmss)</item>
+  <item>(HH:mm dd MMMM yyyy)</item>
+  <item>(EEEE,MMMM dd yyyy hh:mm:ss)</item>
+  <item>(E MM dd HH:mm:ss yyyy)</item> 
+  <item>(EEEE, dd dde MMMM HH:mm)</item>
+  <item>(EEEE, MMMM dd yyyy hh:mm:ss CEST)</item>
+  <item>HH:mm:ss dd.MM.yyyy</item>
+  <item>yyyy MMMM dd HH:mm:ss</item>
+  </date-patterns>
+</parser-date-pattern>
+
