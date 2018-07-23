@@ -42,11 +42,11 @@ public class ParRight {
 	@Column(name = "par_canread")
 	private Boolean parCanRead;
 
-	@Column(name = "can_communicate")
-	private Boolean canCommunicate;
-
-	@Column(name = "can_restitute")
-	private Boolean canRestitute;
+//	@Column(name = "can_communicate")
+//	private Boolean canCommunicate;
+//
+//	@Column(name = "can_restitute")
+//	private Boolean canRestitute;
 
 	@Column(name = "par_cancommunicate")
 	private Boolean parCanCommunicate;
@@ -123,21 +123,21 @@ public class ParRight {
 		this.parCanRead = parCanRead;
 	}
 
-	public Boolean isCanCommunicate() {
-		return Objects.isNull(canCommunicate) ? false : canCommunicate;
-	}
+//	public Boolean isCanCommunicate() {
+//		return Objects.isNull(canCommunicate) ? false : canCommunicate;
+//	}
 
-	public void setCanCommunicate(Boolean canCommunicate) {
-		this.canCommunicate = canCommunicate;
-	}
-
-	public Boolean isCanRestitute() {
-		return Objects.isNull(canRestitute) ? false : canRestitute;
-	}
-
-	public void setCanRestitute(Boolean canRestitute) {
-		this.canRestitute = canRestitute;
-	}
+//	public void setCanCommunicate(Boolean canCommunicate) {
+//		this.canCommunicate = canCommunicate;
+//	}
+//
+//	public Boolean isCanRestitute() {
+//		return Objects.isNull(canRestitute) ? false : canRestitute;
+//	}
+//
+//	public void setCanRestitute(Boolean canRestitute) {
+//		this.canRestitute = canRestitute;
+//	}
 
 	public Boolean isParCanCommunicate() {
 		return Objects.isNull(parCanCommunicate) ? false : parCanCommunicate;

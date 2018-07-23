@@ -125,16 +125,12 @@ public class UserProfileRightService {
 			// Add the rights
 			if (rights.get(parId) == null)
 				rights.put(parId, new HashMap<String, Boolean>());
-			rights.get(parId).put("par_candeposit",
-					Objects.isNull(pr.isParCanDeposit()) ? false : pr.isParCanDeposit());
-			rights.get(parId).put("par_candelay", Objects.isNull(pr.isParCanDelay()) ? false : pr.isParCanDelay());
-			rights.get(parId).put("par_candestroy",
-					Objects.isNull(pr.isParCanDestroy()) ? false : pr.isParCanDestroy());
-			rights.get(parId).put("par_canread", Objects.isNull(pr.isParCanRead()) ? false : pr.isParCanRead());
-			rights.get(parId).put("par_cancommunicate",
-					Objects.isNull(pr.isParCanCommunicate()) ? false : pr.isParCanCommunicate());
-			rights.get(parId).put("par_canrestitute",
-					Objects.isNull(pr.isParCanRestitute()) ? false : pr.isParCanRestitute());
+			rights.get(parId).put("par_candeposit", pr.isParCanDeposit());
+			rights.get(parId).put("par_candelay", pr.isParCanDelay());
+			rights.get(parId).put("par_candestroy", pr.isParCanDestroy());
+			rights.get(parId).put("par_canread", pr.isParCanRead());
+			rights.get(parId).put("par_cancommunicate", pr.isParCanCommunicate());
+			rights.get(parId).put("par_canrestitute", pr.isParCanRestitute());
 
 			// Add all docTypes
 			String docTypes = profile.getDocTypes().stream().map(dt -> 

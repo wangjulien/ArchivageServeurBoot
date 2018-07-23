@@ -54,7 +54,7 @@ public class ScheduledArchivageAnalysis {
 	private static final String USER_ID = "system";
 	private static final String APP_VERSION = "1";
 	private static final int MAX_CHECK_FILES_THREAD = 5;
-	
+
 	private static final String DEFAULT_AUTORC_SERVLET_URL = "http://localhost:8087/automateRC/AutomateServiceServlet";
 	private static final int HOURS_BETWEEN_INTERGITY_CHECK = 24;
 
@@ -113,8 +113,8 @@ public class ScheduledArchivageAnalysis {
 			BackgroundService bgsType = BackgroundService.valueOf(bgs.getBgsCod());
 
 			// Si le traitement n'est pas demarre ou est deja demarre depuis ..
-			if (checkToDo(bgs))
-				return;
+			if (!checkToDo(bgs))
+				continue;
 
 			// mettre a jour date de demarrage dans la DB
 			bgs.setBgsProcess(process);
@@ -244,7 +244,7 @@ public class ScheduledArchivageAnalysis {
 	private boolean checkToDo(final BgService bgs) {
 
 		// Ce bgs est active
-		if (bgs.isBgsOn() && (null == bgs.getBgsProcess() // pas de Process IP
+		if (bgs.isBgsOn() && (Objects.isNull(bgs.getBgsProcess()) // pas de Process IP
 				|| this.process.equals(bgs.getBgsProcess()) // ou Process IP est soi meme
 				|| isBgsStartMoreThan(bgs, 1)) // ou Demarrer depuis 1h par l'autre Process
 		) {
@@ -262,7 +262,7 @@ public class ScheduledArchivageAnalysis {
 	 * @return
 	 */
 	private boolean isBgsStartMoreThan(final BgService bgs, final long hoursToWait) {
-		if (null == bgs.getBgsStart())
+		if (Objects.isNull(bgs.getBgsStart()))
 			return true;
 
 		// StartTime plus n hours est avant NOW

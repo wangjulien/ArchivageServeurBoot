@@ -79,7 +79,7 @@ spring:
 
 app: 
   archivageserveur: 
-    url: http://localhost:8080/archivageserveur/ArchivageService
+    url: http://localhost:8087/archivageserveur/ArchivageService
 # cron expression of filling task rate (every minute)
   fillingTaskRate:
     cronexp: 0 0/10 * 1/1 * ?

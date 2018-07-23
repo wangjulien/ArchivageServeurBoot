@@ -37,7 +37,6 @@ import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.DraftDao;
 import com.telino.avp.dao.ProfileDao;
 import com.telino.avp.dao.UserDao;
-import com.telino.avp.entity.archive.Depot;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Draft;
 import com.telino.avp.entity.archive.EncryptionKey;
@@ -1227,9 +1226,7 @@ public class DocumentService {
 			document.setArchiverMail((String) input.get("mailid"));
 			document.setProfile(profileDao.findByParId((Integer) input.get("par_id")));
 			if (Objects.nonNull(input.get("iddepot"))) {
-				Depot depot = new Depot();
-				depot.setIdDepot(UUID.fromString((String) input.get("iddepot")));
-				document.setDepot(depot);
+				document.setDepot(depotDao.findByDepotId(UUID.fromString((String) input.get("iddepot"))));
 			}
 			document.setElasticid((String) input.get("elasticid"));
 			document.setDomnNom((String) input.get("domnnom"));

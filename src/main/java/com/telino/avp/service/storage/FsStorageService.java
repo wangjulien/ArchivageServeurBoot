@@ -131,6 +131,17 @@ public class FsStorageService extends AbstractStorageService {
 
 	@Override
 	public boolean archive(final Document document) {
+		// Valoriser les empreintes
+		try {
+			if (Objects.isNull(document.getEmpreinte()))
+				document.setEmpreinte(new Empreinte());
+
+			document.getEmpreinte().setEmpreinteInterne(documentService.computeTelinoPrint(document));
+			document.getEmpreinte().setEmpreinte(documentService.computePrint(document));
+		} catch (AvpExploitException e) {
+			LOGGER.error("Erreur lors de hachage du document : " + document.getTitle());
+			return false;
+		}
 
 		Param appParam = SwitchDataSourceService.CONTEXT_APP_PARAM.get();
 
@@ -155,16 +166,6 @@ public class FsStorageService extends AbstractStorageService {
 			}
 		}
 
-		// Valoriser les empreintes
-		try {
-			if (Objects.isNull(document.getEmpreinte())) document.setEmpreinte(new Empreinte());
-			
-			document.getEmpreinte().setEmpreinteInterne(documentService.computeTelinoPrint(document));
-			document.getEmpreinte().setEmpreinte(documentService.computePrint(document));
-		} catch (AvpExploitException e) {
-			LOGGER.error("Erreur lors de hachage du document : " + document.getTitle());
-			return false;
-		}
 		documentDao.fillEmpreinteUnique(document);
 
 		// TODO : commet archiveFS() toujour return true, il faut bien gerer l'EXCEPTION
@@ -426,7 +427,7 @@ public class FsStorageService extends AbstractStorageService {
 				// recupere le SecretKey
 				Chiffrement chiffrement = document.getChiffrement();
 				content = documentService.decrypt(content, chiffrement.getEncryptionKey(), document.getCryptageIv());
-				
+
 			} catch (Exception e) {
 				throw new AvpExploitException("531", e, "Décryptage du contenu d''une archive", null, docId.toString(),
 						null);
