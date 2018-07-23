@@ -167,12 +167,12 @@ public class DraftService {
 		Draft draft = draftDao.get(docId);
 
 		resultat.put("docid", draft.getDocId().toString());
-		resultat.put("draftdate", Objects.isNull(draft.getDraftdate()) ? "" : draft.getDraftdate().toString());
+		resultat.put("draftdate", Objects.isNull(draft.getDraftdate()) ? null : Date.from(draft.getDraftdate().toInstant()));  // Convert to Date for the sack of GWT Front
 		resultat.put("doctype", draft.getDoctype());
 		resultat.put("categorie", draft.getCategorie());
 		resultat.put("title", draft.getTitle());
 		resultat.put("description", draft.getDescription());
-		resultat.put("docsdate", Objects.isNull(draft.getDocsdate()) ? "" : draft.getDocsdate().toString());
+		resultat.put("docsdate", Objects.isNull(draft.getDocsdate()) ? null : Date.from(draft.getDocsdate().toInstant()));
 		resultat.put("content_type", draft.getContentType());
 		resultat.put("content_length", Objects.isNull(draft.getContentLength()) ? 0 : draft.getContentLength().intValue());
 		resultat.put("keywords", Objects.isNull(draft.getKeywords()) ? "" : draft.getKeywords().replaceAll("<", "").replaceAll(">", ""));

@@ -55,8 +55,8 @@ public class StartCdmsAnalysisController {
 			if (param.contains("start")) {
 				if (ScheduleConfig.CTE.get(nomBase) == null) {
 					// if the scheduled background service is not started
-					ScheduledFuture<?> future = threadPoolTaskScheduler.scheduleAtFixedRate(
-							() -> scheduledArchivageAnalysis.launchBackgroudServices(nomBase), cycleRate);
+					ScheduledFuture<?> future = threadPoolTaskScheduler.scheduleWithFixedDelay(
+							() -> scheduledArchivageAnalysis.launchBackgroudServices(nomBase), cycleRate * 60 * 1000);
 					// ajouter
 					ScheduleConfig.CTE.putIfAbsent(nomBase, future);
 

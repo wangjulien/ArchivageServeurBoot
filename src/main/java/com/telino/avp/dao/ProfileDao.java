@@ -21,10 +21,7 @@ public class ProfileDao {
 	private MirrorProfileRepository mirrorProfileRepository;
 
 	public void saveProfile(final Profile profile) {
-		
-//		if (Objects.isNull(profile.getParId()))
-//			profile.setParId(UUID.randomUUID());
-		
+			
 		masterProfileRepository.save(profile);
 		mirrorProfileRepository.save(profile);
 	}

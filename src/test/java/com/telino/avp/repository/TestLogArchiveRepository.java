@@ -127,8 +127,8 @@ public class TestLogArchiveRepository {
 				true);
 
 		// Il doit trouver le log apres scellement (y compris le scellement log)
-		assertEquals(listMaster.size(), 1);
-		assertEquals(listMirror.size(), 1);
+		assertEquals(1, listMaster.size());
+		assertEquals(1, listMirror.size());
 
 		Set<UUID> logIdsMaster = listMaster.stream().map(LogArchive::getLogId).collect(Collectors.toSet());
 		Set<UUID> logIdsMirror = listMaster.stream().map(LogArchive::getLogId).collect(Collectors.toSet());

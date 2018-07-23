@@ -710,12 +710,12 @@ public class DocumentService {
 		resultat.put("categorie", doc.getCategorie());
 		resultat.put("title", doc.getTitle());
 		resultat.put("description", doc.getDescription());
-		resultat.put("date", Objects.isNull(doc.getDate()) ? "" : doc.getDate().toString());
+		resultat.put("date", Date.from(doc.getDate().toInstant()));  // Convert to Date for the sack of GWT Front
 		resultat.put("archiver_id", doc.getArchiverId());
 		resultat.put("content_type", doc.getContentType());
 		resultat.put("content_length", Objects.isNull(doc.getContentLength()) ? "" : doc.getContentLength().intValue());
-		resultat.put("archive_date", Objects.isNull(doc.getArchiveDate()) ? "" : doc.getArchiveDate().toString());
-		resultat.put("archive_end", Objects.isNull(doc.getArchiveEnd()) ? "" : doc.getArchiveEnd().toString());
+		resultat.put("archive_date", Date.from(doc.getArchiveDate().toInstant())); // Convert to Date for the sack of GWT Front
+		resultat.put("archive_end", Date.from(doc.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT Front
 		resultat.put("application", doc.getApplication());
 		resultat.put("keywords",
 				Objects.isNull(doc.getKeywords()) ? "" : doc.getKeywords().replaceAll("<", "").replaceAll(">", ""));
@@ -723,7 +723,7 @@ public class DocumentService {
 		resultat.put("archiver_mail", doc.getArchiverMail());
 		resultat.put("mailowner", doc.getMailowner());
 		resultat.put("domaineowner", doc.getDomaineowner());
-		resultat.put("par_id", Objects.isNull(doc.getProfile()) ? "" : doc.getProfile().getParId().toString());
+		resultat.put("par_id", doc.getProfile().getParId());
 		resultat.put("ar_profile", Objects.isNull(doc.getProfile()) ? "" : doc.getProfile().getArProfile());
 		resultat.put("elasticid", doc.getElasticid());
 		resultat.put("serviceverseur", doc.getServiceverseur());
@@ -780,15 +780,15 @@ public class DocumentService {
 			ligne.put("keywords", kw.getKeywords());
 			ligne.put("categorie", kw.getCategorie());
 			ligne.put("title", kw.getTitle());
-			ligne.put("date", kw.getDate());
+			ligne.put("date", Date.from(kw.getDate().toInstant())); // Convert to Date for the sack of GWT Front
 			ligne.put("archiver_id", kw.getArchiverId());
 			ligne.put("content_type", kw.getContentType());
-			ligne.put("content_length", Objects.isNull(kw.getContentLength()) ? "" : kw.getContentLength().intValue());
-			ligne.put("archive_date", kw.getArchiveDate());
-			ligne.put("archive_end", kw.getArchiveEnd());
+			ligne.put("content_length", Objects.isNull(kw.getContentLength()) ? 0 : kw.getContentLength().intValue());
+			ligne.put("archive_date", Date.from(kw.getArchiveDate().toInstant())); // Convert to Date for the sack of GWT Front
+			ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT Front
 			ligne.put("application", kw.getApplication());
 			ligne.put("archiver_mail", kw.getArchiverMail());
-			ligne.put("par_id", Objects.isNull(kw.getProfile()) ? "" : kw.getProfile().getParId().toString());
+			ligne.put("par_id", kw.getProfile().getParId());
 			ligne.put("ar_profile", Objects.isNull(kw.getProfile()) ? "" : kw.getProfile().getArProfile());
 			ligne.put("elasticid", kw.getElasticid());
 
@@ -1246,7 +1246,7 @@ public class DocumentService {
 					GEDInfo.put("user", document.getArchiverId());
 					GEDInfo.put("elasticid", document.getElasticid());
 					GEDInfo.put("archivage_profile_id",
-							Objects.isNull(document.getProfile()) ? "" : document.getProfile().getParId().toString());
+							Objects.isNull(document.getProfile()) ? null : document.getProfile().getParId());
 					GEDInfo.put("docid", document.getDocId().toString());
 					GEDInfo.put("keywords", document.getKeywords());
 					GEDInfo.put("doctype", document.getDoctype());

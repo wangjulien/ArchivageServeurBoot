@@ -27,7 +27,7 @@ import com.telino.avp.entity.context.User;
 @Table(name = "log_archive")
 @NamedNativeQueries({
 		@NamedNativeQuery(name = "LogArchive.findAllLogArchiveByTimestampForContent", query = "select a.* from log_archive a where a.timestamp >= "
-				+ "(select b.timestamp from log_archive b where b.logtype = :arcTypeS and b.timestamp < :timestamp order by a.timestamp desc limit 1)"
+				+ "(select b.timestamp from log_archive b where b.logtype = :arcTypeS and b.timestamp < :timestamp order by b.timestamp desc limit 1)"
 				+ " and a.timestamp < :timestamp", resultClass = LogArchive.class),
 		@NamedNativeQuery(name = "LogArchive.findLogArchiveForDocId", query = "select b.* from log_archive b where b.timestamp > "
 				+ "(select a.timestamp from log_archive a where a.docid = :docid and a.logtype = :arcTypeA order by a.timestamp asc limit 1) "
