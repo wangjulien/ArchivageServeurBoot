@@ -30,6 +30,7 @@ public class RestitutionList {
 
 	public RestitutionList() {
 		super();
+		this.id = new RestitutionListId();
 	}
 
 	public RestitutionListId getId() {

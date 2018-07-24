@@ -1,15 +1,19 @@
 package com.telino.avp.entity.archive;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.ColumnResult;
+import javax.persistence.ConstructorResult;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.SqlResultSetMapping;
 import javax.persistence.Table;
 
 import com.telino.avp.entity.context.Profile;
@@ -22,14 +26,8 @@ import com.telino.avp.entity.context.Profile;
  */
 @Entity
 @Table(name = "document")
-//@NamedNativeQueries({ @NamedNativeQuery(name = "Document.findDocumentDtoInDocIds", query = "select distinct "
-//		+ "new DocumentDto(d.docId, d.title, d.archiveDate as archiveDateMs, d.cryptage, d.cryptageAlgo, s.encodedKey, d.cryptageIv, "
-//		+ "aa.hash, d.empreinte.empreinte as empreinteSimple, d.empreinte.empreinteUnique as empreinteUnique, d.empreinte.empreinteInterneas empreinteTelino) "
-//		+ "from Document d "
-//		+ "left join LogArchive aa on aa.docId = d.docId and aa.logType = :arcTypeA and aa.hash is not null "
-//		+ "left join Chiffrement cf on cf.cryptId = d.cryptageAlgoId "
-//		+ "left join SecretKey s on s.keyId = cf.idCrypKey " 
-//		+ "where aa.hash is not null and d.docId in :doids"), })
+@SqlResultSetMapping(name = "DocumentResult", classes = { @ConstructorResult(targetClass = Document.class, columns = {
+		@ColumnResult(name = "docid", type = UUID.class), @ColumnResult(name = "title", type = String.class) }) })
 public class Document {
 
 	@Id
@@ -126,6 +124,12 @@ public class Document {
 		super();
 	}
 
+	public Document(UUID docId, String title) {
+		super();
+		this.docId = docId;
+		this.title = title;
+	}
+
 	public UUID getDocId() {
 		return docId;
 	}
@@ -151,7 +155,7 @@ public class Document {
 	}
 
 	public ZonedDateTime getDate() {
-		return date;
+		return Objects.isNull(date) ? ZonedDateTime.now() : date;
 	}
 
 	public void setDate(ZonedDateTime date) {
@@ -199,7 +203,7 @@ public class Document {
 	}
 
 	public ZonedDateTime getArchiveDate() {
-		return archiveDate;
+		return Objects.isNull(archiveDate) ? ZonedDateTime.now() : archiveDate;
 	}
 
 	public void setArchiveDate(ZonedDateTime archiveDate) {
@@ -231,7 +235,7 @@ public class Document {
 	}
 
 	public ZonedDateTime getArchiveEnd() {
-		return archiveEnd;
+		return Objects.isNull(archiveEnd) ? ZonedDateTime.now() : archiveEnd;
 	}
 
 	public void setArchiveEnd(ZonedDateTime archiveEnd) {

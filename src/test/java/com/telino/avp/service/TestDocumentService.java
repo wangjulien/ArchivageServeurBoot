@@ -468,7 +468,7 @@ public class TestDocumentService {
 		tmpMap.put("doctype", "DocumentDocType");
 		tmpMap.put("categorie", "DocumentCategorie");
 		tmpMap.put("content", base64TestContent);
-		tmpMap.put("content_length", "10");
+		tmpMap.put("content_length", 10);
 		tmpMap.put("docsdate", new Timestamp(new Date().getTime()));
 		LinkedList<Object> tmp = new LinkedList<>();
 		tmp.add(tmpMap);

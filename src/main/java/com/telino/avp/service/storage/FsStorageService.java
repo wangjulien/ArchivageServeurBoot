@@ -1,6 +1,5 @@
 package com.telino.avp.service.storage;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Iterator;
@@ -448,16 +447,10 @@ public class FsStorageService extends AbstractStorageService {
 	 * @throws AvpExploitException
 	 */
 	private boolean archiveFS(Document document, FSProc fsproc) throws AvpExploitException {
-		try {
-			String contentBase64 = new String(Base64.getEncoder().encode(document.getContent()), "UTF-8");
+		String contentBase64 = Base64.getEncoder().encodeToString(document.getContent());
 
-			// TOUJOUR return true!!!
-			return fsproc.writeFile(document.getEmpreinte().getEmpreinteUnique(), contentBase64);
-
-		} catch (UnsupportedEncodingException e) {
-			throw new AvpExploitException("510", e);
-		}
-
+		// TOUJOUR return true!!!
+		return fsproc.writeFile(document.getEmpreinte().getEmpreinteUnique(), contentBase64);
 	}
 
 	/**

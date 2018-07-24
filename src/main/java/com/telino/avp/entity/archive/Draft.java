@@ -1,16 +1,13 @@
 package com.telino.avp.entity.archive;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
-import com.telino.avp.protocol.DbEntityProtocol.DraftStatut;
 
 /**
  * @author jwang
@@ -140,7 +137,7 @@ public class Draft {
 	}
 
 	public ZonedDateTime getDocsdate() {
-		return docsdate;
+		return Objects.isNull(docsdate) ? ZonedDateTime.now() : docsdate;
 	}
 
 	public void setDocsdate(ZonedDateTime docsdate) {
@@ -212,7 +209,7 @@ public class Draft {
 	}
 
 	public ZonedDateTime getDraftdate() {
-		return draftdate;
+		return Objects.isNull(draftdate) ? ZonedDateTime.now() : draftdate;
 	}
 
 	public void setDraftdate(ZonedDateTime draftdate) {

@@ -268,10 +268,9 @@ public class DocumentDao {
 		return masterDocumentRepository.findByMd5AndDomnNom(md5, domnNom);
 	}
 
-	// TODO : ??? Dynamic query
 	@SuppressWarnings("unchecked")
 	public List<Document> getDocumentsByQuery(final String request) {
-		return masterEntityManagerFactory.createEntityManager().createNativeQuery(request, Document.class)
+		return masterEntityManagerFactory.createEntityManager().createNativeQuery(request, "DocumentResult")
 				.getResultList();
 	}
 

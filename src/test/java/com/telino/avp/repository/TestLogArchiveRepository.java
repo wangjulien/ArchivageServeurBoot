@@ -56,7 +56,7 @@ public class TestLogArchiveRepository {
 	private LogArchive logArchiveAfter;
 
 	@Before
-	public void buildEntity() {
+	public void buildEntity() throws InterruptedException {
 
 		Document archive = new Document();
 		archive.setDocId(TestConstants.TEST_DOC_ID);
@@ -70,23 +70,27 @@ public class TestLogArchiveRepository {
 		logArchiveA.setHash(TestConstants.TEST_HASH);
 		logArchiveA.setLogType(LogArchiveType.A.toString());
 
+		// Persister dans les deux bases
+		logArchiveDao.save(logArchiveA);
+		Thread.sleep(10);
+		
 		// Log de scellement de journaux
 		logArchiveS = new LogArchive();
 		logArchiveS.setLogId(UUID.randomUUID());
 		logArchiveS.setDocument(archive);
 		logArchiveS.setHorodatage(ZonedDateTime.now());
 		logArchiveS.setLogType(LogArchiveType.S.toString());
-
+		
+		logArchiveDao.save(logArchiveS);
+		Thread.sleep(10);
+		
 		// Log apres scellement de journaux
 		logArchiveAfter = new LogArchive();
 		logArchiveAfter.setLogId(UUID.randomUUID());
 		logArchiveAfter.setDocument(null);
 		logArchiveAfter.setHash(TestConstants.TEST_HASH);
-		logArchiveAfter.setLogType(LogArchiveType.A.toString());
+		logArchiveAfter.setLogType(LogArchiveType.L.toString());
 
-		// Persister dans les deux bases
-		logArchiveDao.save(logArchiveA);
-		logArchiveDao.save(logArchiveS);
 		logArchiveDao.save(logArchiveAfter);
 	}
 
@@ -95,27 +99,26 @@ public class TestLogArchiveRepository {
 		assertNotNull(logArchiveDao);
 
 		// Verifier le save
-		assertEquals(logArchiveAfter.getLogId(), logArchiveDao.findLogArchiveById(logArchiveAfter.getLogId()).getLogId());
+		assertEquals(logArchiveAfter.getLogId(),
+				logArchiveDao.findLogArchiveById(logArchiveAfter.getLogId()).getLogId());
 		assertTrue(mirrorLogArchiveRepository.findById(logArchiveAfter.getLogId()).isPresent());
 	}
 
 	@Test
 	public void find_hash_for_doc() {
 		// Verifier le findHash
-		assertEquals(logArchiveDao.findHashForDocId(TestConstants.TEST_DOC_ID, false),
-				TestConstants.TEST_HASH);
-		assertEquals(logArchiveDao.findHashForDocId(TestConstants.TEST_DOC_ID, true),
-				TestConstants.TEST_HASH);
+		assertEquals(logArchiveDao.findHashForDocId(TestConstants.TEST_DOC_ID, false), TestConstants.TEST_HASH);
+		assertEquals(logArchiveDao.findHashForDocId(TestConstants.TEST_DOC_ID, true), TestConstants.TEST_HASH);
 
 	}
 
 	@Test
 	public void find_seal_log_archive_for_doc() {
 		// Verifier le findHash
-		assertEquals(logArchiveDao.findLogArchiveForDocId(TestConstants.TEST_DOC_ID, false).getLogId(),
-				logArchiveS.getLogId());
-		assertEquals(logArchiveDao.findLogArchiveForDocId(TestConstants.TEST_DOC_ID, true).getLogId(),
-				logArchiveS.getLogId());
+		assertEquals(logArchiveS.getLogId(),
+				logArchiveDao.findLogArchiveForDocId(TestConstants.TEST_DOC_ID, false).getLogId());
+		assertEquals(logArchiveS.getLogId(),
+				logArchiveDao.findLogArchiveForDocId(TestConstants.TEST_DOC_ID, true).getLogId());
 
 	}
 

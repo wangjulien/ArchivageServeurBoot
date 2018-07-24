@@ -200,7 +200,7 @@ public class DraftService {
 		Draft draft = draftDao.get(UUID.fromString(input.get("docid").toString()));
 
 		// Only getAsPdf (PDF) works
-		if (input.get("getAsPdf") != null && input.get("getAsPdf").equals("true")) {
+		if (Objects.nonNull(input.get("getAsPdf")) && input.get("getAsPdf").equals("true")) {
 			if (draft.getTitle().endsWith(".eml")) {
 				// TODO : ??? Here is always empty? What's ApercManager for?
 			} else {

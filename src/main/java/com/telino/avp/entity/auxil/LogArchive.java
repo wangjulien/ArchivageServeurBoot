@@ -1,5 +1,6 @@
 package com.telino.avp.entity.auxil;
 
+import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -28,8 +29,8 @@ import com.telino.avp.entity.context.User;
 @NamedNativeQueries({
 		@NamedNativeQuery(name = "LogArchive.findAllLogArchiveByTimestampForContent", query = "select a.* from log_archive a where a.timestamp >= "
 				+ "(select b.timestamp from log_archive b where b.logtype = :arcTypeS and b.timestamp < :timestamp order by b.timestamp desc limit 1)"
-				+ " and a.timestamp < :timestamp", resultClass = LogArchive.class),
-		@NamedNativeQuery(name = "LogArchive.findLogArchiveForDocId", query = "select b.* from log_archive b where b.timestamp > "
+				+ " and a.timestamp < :timestamp order by a.timestamp desc", resultClass = LogArchive.class),
+		@NamedNativeQuery(name = "LogArchive.findLogArchiveForDocId", query = "select b.* from log_archive b where b.timestamp >= "
 				+ "(select a.timestamp from log_archive a where a.docid = :docid and a.logtype = :arcTypeA order by a.timestamp asc limit 1) "
 				+ " and b.logtype = :arcTypeS order by b.timestamp asc limit 1", resultClass = LogArchive.class),
 		@NamedNativeQuery(name = "LogArchive.findHashForDocId", query = "select a.hash from log_archive a "
@@ -138,7 +139,7 @@ public class LogArchive extends Journal {
 		sb.append(Objects.isNull(attestation) ? "" : attestation.getDocId().toString());
 		sb.append(Objects.isNull(document) ? "" : document.getDocId().toString());
 		sb.append(hash);
-		sb.append(Objects.isNull(timestampTokenBytes) ? "" : timestampTokenBytes.toString());
+		sb.append(Objects.isNull(timestampTokenBytes) ? "" : Base64.getEncoder().encodeToString(timestampTokenBytes));
 
 		return sb.toString();
 	}

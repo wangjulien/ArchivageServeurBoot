@@ -5,11 +5,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -21,12 +23,12 @@ import org.springframework.stereotype.Service;
 import com.telino.avp.dao.CommunicationDao;
 import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.RestitutionDao;
+import com.telino.avp.dao.UserDao;
 import com.telino.avp.entity.archive.Communication;
 import com.telino.avp.entity.archive.CommunicationList;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Restitution;
 import com.telino.avp.entity.archive.RestitutionList;
-import com.telino.avp.entity.context.ParRight;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
 import com.telino.avp.protocol.DbEntityProtocol.CommunicationState;
@@ -41,6 +43,9 @@ public class ComAndRestService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ComAndRestService.class);
 
 	@Autowired
+	private UserDao userDao;
+
+	@Autowired
 	private DocumentDao documentDao;
 
 	@Autowired
@@ -48,20 +53,19 @@ public class ComAndRestService {
 
 	@Autowired
 	private RestitutionDao restitutionDao;
-	
+
 	@Autowired
 	private UserProfileRightService userProfileRightService;
-	
+
 	@Autowired
 	private DocumentService documentService;
-	
+
 	@Autowired
 	private AbstractStorageService storageService;
-	
+
 	@Autowired
 	private JournalArchiveService journalArchiveService;
 
-	
 	/**
 	 * Chercher une communication metaDonnee dans DB
 	 * 
@@ -71,7 +75,7 @@ public class ComAndRestService {
 	public Communication findByComId(final UUID comId) {
 		return communicationDao.findByComId(comId);
 	}
-	
+
 	/**
 	 * Génère à la volée le fichier zip de communication d'une ou plusieurs archives
 	 * dont la communication a été préalablement validée
@@ -153,18 +157,17 @@ public class ComAndRestService {
 	 * @return
 	 */
 	public Communication communication(final Map<String, Object> input) {
-		
-		// If the user can communication a batch of docs
-		Document document = documentDao.get(UUID.fromString(input.get("docid").toString()), false);
-		Objects.requireNonNull(document.getProfile(), "A document should have a profile!");
-		
-		final String userId = input.get("user").toString();
 
-		if (!userProfileRightService.canDoThePredict(document.getProfile().getParId(), userId, ParRight::isParCanCommunicate)) {
-//			resultat.put("codeRetour", "1");
-//			resultat.put("message", "Opération non autorisée");
-			return null;
-		}
+		// If the user can communication a batch of docs
+		final String userId = (String) input.get("user");
+
+		// if
+		// (!userProfileRightService.canDoThePredict(doc.getParRights().getProfile().getParId(),
+		// userId, ParRight::isParCanCommunicate)) {
+		// resultat.put("codeRetour", "1");
+		// resultat.put("message", "Opération non autorisée");
+		// return null;
+		// }
 
 		// get file list
 		String request = (String) input.get("sqlRequest");
@@ -195,7 +198,7 @@ public class ComAndRestService {
 
 		if (input.get("idlist") != null && input.get("idlist").toString().length() > 0) {
 
-			filter = " docid in (" + input.get("idlist") + ")";
+			filter = " docid in (" + addApost((String) input.get("idlist")) + ")";
 		}
 
 		if (filter.length() > 0)
@@ -208,10 +211,10 @@ public class ComAndRestService {
 
 		// New communication instance
 		Communication newCommunication = new Communication();
-		newCommunication.setUserId(input.get("user").toString());
-		newCommunication.setDomnNom(input.get("domnnom").toString());
+		newCommunication.setUserId((String) input.get("user"));
+		newCommunication.setDomnNom((String) input.get("domnnom"));
 		newCommunication.setCommunicationStatus(CommunicationState.E);
-		newCommunication.setCommunicationMotif(input.get("communicationmotif").toString());
+		newCommunication.setCommunicationMotif((String) input.get("communicationmotif"));
 		newCommunication.setHorodatage(ZonedDateTime.now());
 		// expiration d'une communication après 15 jours.
 		newCommunication.setCommunicationEnd(ZonedDateTime.now().plus(15, ChronoUnit.DAYS));
@@ -223,6 +226,8 @@ public class ComAndRestService {
 			comList.setDocument(doc);
 			comList.setTitle(doc.getTitle());
 			comList.setCommunique(false);
+
+			newCommunication.addCommunicationList(comList);
 		}
 
 		communicationDao.save(newCommunication);
@@ -260,7 +265,7 @@ public class ComAndRestService {
 
 		communicationDao.save(communication);
 	}
-	
+
 	/**
 	 * Génère à la volée le fichier zip de restitution d'une ou plusieurs archives
 	 * 
@@ -374,7 +379,7 @@ public class ComAndRestService {
 
 		if (input.get("idlist") != null && input.get("idlist").toString().length() > 0) {
 
-			filter = " docid in (" + input.get("idlist") + ")";
+			filter = " docid in (" + addApost((String) input.get("idlist")) + ")";
 		}
 
 		if (filter.length() > 0)
@@ -386,12 +391,12 @@ public class ComAndRestService {
 		List<Document> documentList = documentDao.getDocumentsByQuery(request);
 
 		Restitution newRestitution = new Restitution();
-		newRestitution.setUserId(input.get("user").toString());
-		newRestitution.setDomnNom(input.get("domnnom").toString());
-		newRestitution.setRestitutionMotif(input.get("restitutionmotif").toString());
+		newRestitution.setUserId((String) input.get("user"));
+		newRestitution.setDomnNom((String) input.get("domnnom"));
+		newRestitution.setRestitutionMotif((String) input.get("restitutionmotif"));
 		newRestitution.setRestitutionStatus(RestitutionState.E);
 		newRestitution.setHorodatage(ZonedDateTime.now());
-		newRestitution.setDestinataire(input.get("destinataire").toString());
+		newRestitution.setDestinataire((String) input.get("destinataire"));
 		// expiration d'une Restitution après 62 jours.
 		newRestitution.setRestitutionEnd(ZonedDateTime.now().plus(62, ChronoUnit.DAYS));
 
@@ -402,12 +407,13 @@ public class ComAndRestService {
 			restList.setDocument(doc);
 			restList.setTitle(doc.getTitle());
 			restList.setRestitue(false);
+
+			newRestitution.addRestitutionList(restList);
 		}
 
 		restitutionDao.save(newRestitution);
 	}
-	
-	
+
 	/**
 	 * Valider une restitution et supprimer les documents restitues
 	 * 
@@ -438,7 +444,6 @@ public class ComAndRestService {
 
 		restitutionDao.save(restitution);
 	}
-	
 
 	/**
 	 * Ajouter un fichier Zip
@@ -461,5 +466,10 @@ public class ComAndRestService {
 		}
 
 		zos.closeEntry();
+	}
+
+	private String addApost(String docIdList) {
+		return Arrays.asList(docIdList.replaceAll("\\s", "").split(",")).stream()
+				.collect(Collectors.joining(",", "'", "'"));
 	}
 }

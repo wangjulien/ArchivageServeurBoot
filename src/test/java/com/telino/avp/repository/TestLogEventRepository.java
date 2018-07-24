@@ -64,7 +64,7 @@ public class TestLogEventRepository {
 	private LogEvent logEventAfter;
 
 	@Before
-	public void buildEntity() {
+	public void buildEntity() throws InterruptedException {
 
 		Document archive = new Document();
 		archive.setDocId(TestConstants.TEST_DOC_ID);
@@ -78,11 +78,17 @@ public class TestLogEventRepository {
 		logEventC.setArchive(archive);
 		logEventC.setLogType(LogEventType.C.toString());
 
+		// Persister dans les deux bases
+		logEventDao.save(logEventC);
+
 		LogArchive logArchiveC = new LogArchive();
 		logArchiveC.setLogId(UUID.randomUUID());
 		logArchiveC.setDocument(archive);
 		logArchiveC.setHorodatage(ZonedDateTime.now());
 		logArchiveC.setLogType(LogArchiveType.C.toString());
+
+		logArchiveDao.save(logArchiveC);
+		Thread.sleep(10);
 
 		// Log de scellement de journaux
 		logEventS = new LogEvent();
@@ -90,15 +96,14 @@ public class TestLogEventRepository {
 		logEventS.setHorodatage(ZonedDateTime.now());
 		logEventS.setLogType(LogEventType.S.toString());
 
+		logEventDao.save(logEventS);
+		Thread.sleep(10);
+
 		// Log apres scellement de journaux
 		logEventAfter = new LogEvent();
 		logEventAfter.setLogId(UUID.randomUUID());
 		logEventAfter.setStatExp(LogEventState.I);
 
-		// Persister dans les deux bases
-		logEventDao.save(logEventC);
-		logEventDao.save(logEventS);
-		logArchiveDao.save(logArchiveC);
 		logEventDao.save(logEventAfter);
 	}
 
@@ -117,8 +122,8 @@ public class TestLogEventRepository {
 		List<LogEvent> listMirror = logEventDao.findAllLogEventBeforeLogIdForContent(logEventAfter.getLogId(), true);
 
 		// Il doit trouver le log apres scellement (y compris le scellement log)
-		assertEquals(listMaster.size(), 1);
-		assertEquals(listMirror.size(), 1);
+		assertEquals(1, listMaster.size());
+		assertEquals(1, listMirror.size());
 
 		Set<UUID> logIdsMaster = listMaster.stream().map(LogEvent::getLogId).collect(Collectors.toSet());
 		Set<UUID> logIdsMirror = listMaster.stream().map(LogEvent::getLogId).collect(Collectors.toSet());

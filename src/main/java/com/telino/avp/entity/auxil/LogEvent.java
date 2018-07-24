@@ -31,7 +31,7 @@ import com.telino.avp.protocol.DbEntityProtocol.LogEventState;
 @NamedNativeQueries({
 		@NamedNativeQuery(name = "LogEvent.findAllLogEventByTimestampForContent", query = "select a.* from log_event a where a.timestamp >= "
 				+ "(select b.timestamp from log_event b where b.logtype = :evtTypeS and b.timestamp < :timestamp order by b.timestamp desc limit 1)"
-				+ " and a.timestamp < :timestamp", resultClass = LogEvent.class) })
+				+ " and a.timestamp < :timestamp order by a.timestamp desc", resultClass = LogEvent.class) })
 public class LogEvent extends Journal {
 
 	@Id

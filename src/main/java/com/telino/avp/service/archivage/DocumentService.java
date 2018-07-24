@@ -648,7 +648,7 @@ public class DocumentService {
 		byte[] content = document.getContent();
 		if (Objects.isNull(input.get("base64"))) {
 
-			if (input.get("getAsPdf") != null && input.get("getAsPdf").equals("true")) {
+			if (Objects.nonNull(input.get("getAsPdf")) && input.get("getAsPdf").equals("true")) {
 
 				if (document.getTitle().endsWith(".eml")) {
 
@@ -668,7 +668,7 @@ public class DocumentService {
 			resultat.put("content", Base64.getEncoder().encodeToString(content));
 		}
 
-		resultat.put("content_length", document.getContentLength().intValue());
+		resultat.put("content_length", Objects.isNull(document.getContentLength()) ? 0 : document.getContentLength().intValue());
 		resultat.put("content_type", document.getContentType());
 		resultat.put("title", document.getTitle());
 
@@ -685,7 +685,7 @@ public class DocumentService {
 			inputToLog.put("docsname", document.getTitle());
 			inputToLog.put("hash",
 					Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
-			inputToLog.put("logtype", LogArchiveType.L);
+			inputToLog.put("logtype", LogArchiveType.L.toString());
 			journalArchiveService.log(inputToLog);
 		}
 	}
@@ -723,7 +723,7 @@ public class DocumentService {
 		resultat.put("archiver_mail", doc.getArchiverMail());
 		resultat.put("mailowner", doc.getMailowner());
 		resultat.put("domaineowner", doc.getDomaineowner());
-		resultat.put("par_id", doc.getProfile().getParId());
+		resultat.put("par_id", Objects.isNull(doc.getProfile()) ? 0 : doc.getProfile().getParId());
 		resultat.put("ar_profile", Objects.isNull(doc.getProfile()) ? "" : doc.getProfile().getArProfile());
 		resultat.put("elasticid", doc.getElasticid());
 		resultat.put("serviceverseur", doc.getServiceverseur());
@@ -788,7 +788,7 @@ public class DocumentService {
 			ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT Front
 			ligne.put("application", kw.getApplication());
 			ligne.put("archiver_mail", kw.getArchiverMail());
-			ligne.put("par_id", kw.getProfile().getParId());
+			ligne.put("par_id", Objects.isNull(kw.getProfile()) ? 0 : kw.getProfile().getParId());
 			ligne.put("ar_profile", Objects.isNull(kw.getProfile()) ? "" : kw.getProfile().getArProfile());
 			ligne.put("elasticid", kw.getElasticid());
 
@@ -878,7 +878,7 @@ public class DocumentService {
 				input.put("docsdate", draft.getDocsdate());
 				input.put("domnnom", draft.getDomnNom());
 				input.put("mailowner", draft.getMailowner());
-				input.put("content_length", Objects.isNull(draft.getContentLength()) ? "0" : draft.getContentLength().toString());
+				input.put("content_length", Objects.isNull(draft.getContentLength()) ? 0 : draft.getContentLength().intValue());
 				input.put("content_type", draft.getContentType());
 				input.put("docsname", draft.getTitle());
 				input.put("title", draft.getTitle());
@@ -1203,7 +1203,7 @@ public class DocumentService {
 				keywords = (String) result.get("keywords");
 			}
 
-			Integer content_length = Integer.valueOf((String) result.get("content_length"));
+			Integer content_length = (Integer) result.get("content_length");
 
 			document.setCryptage(appParam.isCryptage());
 			document.setDate(docsdate);

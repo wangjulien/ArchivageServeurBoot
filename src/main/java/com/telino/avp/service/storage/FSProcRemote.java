@@ -238,10 +238,8 @@ public class FSProcRemote implements FSProc {
 						"Récupération d'une archive par le module de stockage", null, null, null);
 			}
 		} else {
-			byte[] content = new byte[0];
-			String contentBase64 = json.get("content").toString();
-			content = Base64.getDecoder().decode(contentBase64);
-			return content;
+			String contentBase64 = json.get("content").toString();			
+			return Base64.getDecoder().decode(contentBase64);
 		}
 	}
 
