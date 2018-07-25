@@ -6,7 +6,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -14,7 +13,6 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -36,11 +34,11 @@ public class ExpTaskLauncher {
 	
 	private final static int CHECK_FILES_TASK_TIMEOUT = 10;
 	
-	@Value("${app.exptask.max-thread-pool}")
-	private int maxThreadPoolSize;
-	
 	@Autowired
 	private ExpTaskDao expTaskDao;
+	
+	@Autowired
+	private ExecutorService executorService;
 
 	public ExpTaskLauncher() {
 		super();
@@ -54,11 +52,9 @@ public class ExpTaskLauncher {
 	 */
 	@Async
 	public void launchExpTask(List<Callable<Map<String, Object>>> tasksQueue) throws ExpTaskException {
-
-		ExecutorService executor = Executors.newFixedThreadPool(maxThreadPoolSize);	
-		
+	
 		try {
-			List<Future<Map<String, Object>>> results = executor.invokeAll(tasksQueue);
+			List<Future<Map<String, Object>>> results = executorService.invokeAll(tasksQueue);
 			
 			// Afin que l'etat (E) de log_archive est mis a jour, et la reponse ne sois pas trop vite   
 			Thread.sleep(1000);
@@ -93,10 +89,7 @@ public class ExpTaskLauncher {
 			
 			// Exception asynchrone, elle sera pas propage vers thread appelant (ExpTaskChecker)
 			// AsyncUncaughtExceptionHandler est utilise pour traiter les exceptions asychrones
-			executor.shutdownNow();
 			throw new ExpTaskException(e);
 		}
-		
-		executor.shutdownNow();
 	}
 }

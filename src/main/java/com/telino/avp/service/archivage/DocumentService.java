@@ -41,6 +41,7 @@ import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Draft;
 import com.telino.avp.entity.archive.EncryptionKey;
 import com.telino.avp.entity.auxil.LogArchive;
+import com.telino.avp.entity.auxil.LogEvent;
 import com.telino.avp.entity.context.DocType;
 import com.telino.avp.entity.context.MimeType;
 import com.telino.avp.entity.context.ParRight;
@@ -202,7 +203,9 @@ public class DocumentService {
 			if (!storageService.checkFiles(docIds, badDocsInUnit1, badDocsInUnit2)) {
 
 				entiretyCheckResultLogger.logErrorResult(input, badDocsInUnit1, badDocsInUnit2);
-
+				resultat.put("codeRetour", ReturnCode.KO.toString());
+				resultat.put("message", "Controle de l'integralite de ces documents n'est pas passe : \n"
+						+ badDocsInUnit1 + "\n" + badDocsInUnit2);
 			}
 
 			// Controle le sellement de journaux des archives
@@ -210,15 +213,22 @@ public class DocumentService {
 			docIds.removeAll(badDocsInUnit1.keySet());
 			docIds.removeAll(badDocsInUnit2.keySet());
 
-			checkSellementLogArchive(docIds);
+			if (!checkScellementLogArchive(docIds, input)) {
+				resultat.put("codeRetour", ReturnCode.KO.toString());
+				String message = (String) resultat.get("message");
+				resultat.put("message",
+						message + "/nControle de scellement des journaux echoues pour ces documents : \n" + docIds);
+			}
 
-			resultat.put("codeRetour", ReturnCode.OK.toString());
 		} catch (NullPointerException | IOException e) {
 			throw new AvpExploitException("507", e, "Entrée 'input' ne peut pas être parsé en JSON", null, null, null);
 		}
 	}
 
-	private void checkSellementLogArchive(final List<UUID> docIds) throws AvpExploitException {
+	private boolean checkScellementLogArchive(final List<UUID> docIds, final Map<String, Object> input)
+			throws AvpExploitException {
+		boolean allGoesWell = true;
+
 		// Verification de sellement de log_archivage
 		// Recupere logid de log_archive
 
@@ -230,42 +240,48 @@ public class DocumentService {
 				journalArchiveService.verifyJournal(log, false);
 
 			} catch (AvpExploitException e) {
-				Map<String, Object> inputToLog = new HashMap<>();
-				inputToLog.put("origin", "ADELIS");
-				inputToLog.put("operateur", "ADELIS");
-				inputToLog.put("version", "1");
-				inputToLog.put("processus", "checkfiles");
-				inputToLog.put("action", e.getAction());
-				inputToLog.put("logtype", LogEventType.C.toString());
-				inputToLog.put("detail", AvpExploitException.getTableLibelleErreur().get(e.getMessage())[0]);
-				inputToLog.put("archiveid", e.getArchiveId());
-				inputToLog.put("journalid", e.getJournalId());
-				inputToLog.put("methode", e.getMethodName());
-				inputToLog.put("trace", e.getMessage() + "." + Arrays.toString(e.getStackTrace()));
+				allGoesWell = false;
+
+				LogEvent logEvent = new LogEvent();
+				logEvent.setOrigin((String) input.get("origin"));
+				logEvent.setProcessus((String) input.get("processus"));
+				logEvent.setOperateur((String) input.get("operateur"));
+				logEvent.setVersionProcessus((String) input.get("version"));
+				logEvent.setAction(e.getAction());
+				logEvent.setLogType(LogEventType.C.toString());
+				logEvent.setLogArchive(log);
+				logEvent.setMethode(e.getMethodName());
+				logEvent.setDetail(AvpExploitException.getTableLibelleErreur().get(e.getMessage())[0]);
+				logEvent.setTrace(e.getMessage() + "." + Arrays.toString(e.getStackTrace()));
 
 				try {
 					// Log the Exception in LOG_EVENT
-					journalEventService.log(inputToLog);
+					journalEventService.setHorodatageAndSave(logEvent);
 				} catch (AvpExploitException e1) {
 					LOGGER.error("problème dans logevent");
 				}
 			} catch (Exception e) {
-				Map<String, Object> inputToLog = new HashMap<>();
-				inputToLog.put("origin", "ADELIS");
-				inputToLog.put("operateur", "ADELIS");
-				inputToLog.put("version", "1");
-				inputToLog.put("processus", "checkfiles");
-				inputToLog.put("action", this.getClass());
-				inputToLog.put("logtype", LogEventType.E.toString());
-				inputToLog.put("detail", e.getMessage());
+				allGoesWell = false;
+
+				LogEvent logEvent = new LogEvent();
+				logEvent.setOrigin((String) input.get("origin"));
+				logEvent.setProcessus((String) input.get("processus"));
+				logEvent.setOperateur((String) input.get("operateur"));
+				logEvent.setVersionProcessus((String) input.get("version"));
+				logEvent.setLogType(LogEventType.C.toString());
+				logEvent.setDetail(e.getMessage());
+				logEvent.setLogArchive(log);
+				logEvent.setTrace(e.getMessage() + "." + Arrays.toString(e.getStackTrace()));
 
 				try {
-					journalEventService.log(inputToLog);
+					journalEventService.setHorodatageAndSave(logEvent);
 				} catch (AvpExploitException e1) {
 					LOGGER.error("problème dans logevent");
 				}
 			}
 		}
+
+		return allGoesWell;
 	}
 
 	/**
@@ -668,7 +684,8 @@ public class DocumentService {
 			resultat.put("content", Base64.getEncoder().encodeToString(content));
 		}
 
-		resultat.put("content_length", Objects.isNull(document.getContentLength()) ? 0 : document.getContentLength().intValue());
+		resultat.put("content_length",
+				Objects.isNull(document.getContentLength()) ? 0 : document.getContentLength().intValue());
 		resultat.put("content_type", document.getContentType());
 		resultat.put("title", document.getTitle());
 
@@ -710,12 +727,14 @@ public class DocumentService {
 		resultat.put("categorie", doc.getCategorie());
 		resultat.put("title", doc.getTitle());
 		resultat.put("description", doc.getDescription());
-		resultat.put("date", Date.from(doc.getDate().toInstant()));  // Convert to Date for the sack of GWT Front
+		resultat.put("date", Date.from(doc.getDate().toInstant())); // Convert to Date for the sack of GWT Front
 		resultat.put("archiver_id", doc.getArchiverId());
 		resultat.put("content_type", doc.getContentType());
 		resultat.put("content_length", Objects.isNull(doc.getContentLength()) ? "" : doc.getContentLength().intValue());
-		resultat.put("archive_date", Date.from(doc.getArchiveDate().toInstant())); // Convert to Date for the sack of GWT Front
-		resultat.put("archive_end", Date.from(doc.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT Front
+		resultat.put("archive_date", Date.from(doc.getArchiveDate().toInstant())); // Convert to Date for the sack of
+																					// GWT Front
+		resultat.put("archive_end", Date.from(doc.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT
+																					// Front
 		resultat.put("application", doc.getApplication());
 		resultat.put("keywords",
 				Objects.isNull(doc.getKeywords()) ? "" : doc.getKeywords().replaceAll("<", "").replaceAll(">", ""));
@@ -784,8 +803,10 @@ public class DocumentService {
 			ligne.put("archiver_id", kw.getArchiverId());
 			ligne.put("content_type", kw.getContentType());
 			ligne.put("content_length", Objects.isNull(kw.getContentLength()) ? 0 : kw.getContentLength().intValue());
-			ligne.put("archive_date", Date.from(kw.getArchiveDate().toInstant())); // Convert to Date for the sack of GWT Front
-			ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT Front
+			ligne.put("archive_date", Date.from(kw.getArchiveDate().toInstant())); // Convert to Date for the sack of
+																					// GWT Front
+			ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT
+																					// Front
 			ligne.put("application", kw.getApplication());
 			ligne.put("archiver_mail", kw.getArchiverMail());
 			ligne.put("par_id", Objects.isNull(kw.getProfile()) ? 0 : kw.getProfile().getParId());
@@ -878,7 +899,8 @@ public class DocumentService {
 				input.put("docsdate", draft.getDocsdate());
 				input.put("domnnom", draft.getDomnNom());
 				input.put("mailowner", draft.getMailowner());
-				input.put("content_length", Objects.isNull(draft.getContentLength()) ? 0 : draft.getContentLength().intValue());
+				input.put("content_length",
+						Objects.isNull(draft.getContentLength()) ? 0 : draft.getContentLength().intValue());
 				input.put("content_type", draft.getContentType());
 				input.put("docsname", draft.getTitle());
 				input.put("title", draft.getTitle());

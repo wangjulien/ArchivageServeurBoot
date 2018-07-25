@@ -16,7 +16,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
@@ -83,6 +82,9 @@ public class ScheduledArchivageAnalysis {
 
 	@Autowired
 	private SwitchDataSourceService switchDataSourceService;
+	
+	@Autowired
+	private ExecutorService executorService;
 
 	public ScheduledArchivageAnalysis() throws UnknownHostException {
 		super();
@@ -113,25 +115,15 @@ public class ScheduledArchivageAnalysis {
 			BackgroundService bgsType = BackgroundService.valueOf(bgs.getBgsCod());
 
 			// Si le traitement n'est pas demarre ou est deja demarre depuis ..
-			if (!checkToDo(bgs))
+			if (!checkToDo(bgs, bgsType))
 				continue;
-
-			// mettre a jour date de demarrage dans la DB
-			bgs.setBgsProcess(process);
-			bgs.setBgsStart(ZonedDateTime.now());
-			bgServiceDao.save(bgs);
 
 			switch (bgsType) {
 			case CHECKFILES:
-				// Service demarre depuis plus de 24h, on peut relancer
-				if (isBgsStartMoreThan(bgs, HOURS_BETWEEN_INTERGITY_CHECK)) {
-
-					if (checkFiles(nomBase)) {
-						LOGGER.info(
-								"Contrôle de l'intégralité des archives effectué et réussi pour toutes les archives");
-					} else {
-						LOGGER.info("Contrôle de l'intégralité des archives n'est pas passé pour toutes les archives");
-					}
+				if (checkFiles(nomBase)) {
+					LOGGER.info("Contrôle de l'intégralité des archives effectué et réussi pour toutes les archives");
+				} else {
+					LOGGER.info("Contrôle de l'intégralité des archives n'est pas passé pour toutes les archives");
 				}
 
 				break;
@@ -179,6 +171,12 @@ public class ScheduledArchivageAnalysis {
 				LOGGER.error("BgService code inconnu : " + bgs.getBgsCod());
 				break;
 			}
+
+			// mettre a jour date de demarrage dans la DB
+			bgs.setBgsProcess(process);
+			bgs.setBgsStart(ZonedDateTime.now());
+			bgServiceDao.save(bgs);
+
 		}
 	}
 
@@ -241,14 +239,18 @@ public class ScheduledArchivageAnalysis {
 	 * @param bgs
 	 * @return
 	 */
-	private boolean checkToDo(final BgService bgs) {
+	private boolean checkToDo(final BgService bgs, final BackgroundService bgsType) {
 
 		// Ce bgs est active
 		if (bgs.isBgsOn() && (Objects.isNull(bgs.getBgsProcess()) // pas de Process IP
 				|| this.process.equals(bgs.getBgsProcess()) // ou Process IP est soi meme
 				|| isBgsStartMoreThan(bgs, 1)) // ou Demarrer depuis 1h par l'autre Process
 		) {
-			return true;
+			// Service CHECK_FILES demarre depuis plus de 24h, on peut relancer
+			if (BackgroundService.CHECKFILES == bgsType && !isBgsStartMoreThan(bgs, HOURS_BETWEEN_INTERGITY_CHECK))
+				return false;
+			else
+				return true;
 		}
 
 		return false;
@@ -398,7 +400,6 @@ public class ScheduledArchivageAnalysis {
 		final int limit = nbDocs / maxCheckFilesThread + 1;
 		int page = 0;
 
-		ExecutorService executor = Executors.newFixedThreadPool(maxCheckFilesThread);
 		List<Callable<Map<String, Object>>> tasks = new ArrayList<>();
 
 		while (page * limit < nbDocs) {
@@ -452,7 +453,7 @@ public class ScheduledArchivageAnalysis {
 		boolean allThreadOk = true;
 
 		try {
-			for (Future<Map<String, Object>> result : executor.invokeAll(tasks)) {
+			for (Future<Map<String, Object>> result : executorService.invokeAll(tasks)) {
 				Map<String, Object> resultMap = result.get();
 
 				if (!ReturnCode.OK.toString().equals((String) resultMap.get("codeRetour"))) {
@@ -468,9 +469,7 @@ public class ScheduledArchivageAnalysis {
 			LOGGER.error("Erreur lors de l'execution des threads - interrompue ou échouée" + e.getMessage());
 			allThreadOk = false;
 		}
-
-		executor.shutdownNow();
-
+		
 		return allThreadOk;
 	}
 

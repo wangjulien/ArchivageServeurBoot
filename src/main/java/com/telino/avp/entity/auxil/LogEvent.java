@@ -66,7 +66,7 @@ public class LogEvent extends Journal {
 	private Document journalXml;
 
 	@Enumerated(EnumType.STRING)
-	private LogEventState statExp;
+	private LogEventState statExp = LogEventState.I;
 
 	public LogEvent() {
 		super();

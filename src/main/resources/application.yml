@@ -24,11 +24,11 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        temp:
-          use_jdbc_metadata_defaults: false
         jdbc:
           lob:
             non_contextual_creation: true
+        temp:
+          use_jdbc_metadata_defaults: false
   dsConfigList:
     - 
       id: AVPNAV
@@ -76,18 +76,21 @@ spring:
 #      password: cdms123!
 #      pool: 5
 
+logging:
+  level:
+    org.hibernate.engine.jdbc.env.internal.LobCreatorBuilderImpl: ERROR
 
 app: 
   archivageserveur: 
     url: http://localhost:8087/archivageserveur/ArchivageService
-# cron expression of filling task rate (every minute)
+# cron expression of filling task rate (every 10 minute)
   fillingTaskRate:
     cronexp: 0 0/10 * 1/1 * ?
 # cron expression of exploitqtion task rate (every 10 minutes)
   exploitationTaskRate:
     cronexp: 0 0/10 * 1/1 * ?
 # Maximum checkfiles thread = nb of http request
-  exptask:
+  asnytask:
     max-thread-pool: 5
 # Backgroud service (in minute)
   threadanalysis: 

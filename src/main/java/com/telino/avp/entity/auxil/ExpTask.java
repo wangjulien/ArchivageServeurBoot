@@ -39,7 +39,7 @@ public class ExpTask {
 
 	@ManyToOne
 	@JoinColumn(name = "logid")
-	private LogArchive logArchive;
+	private LogEvent logEvent;
 
 	@ManyToOne
 	@JoinColumn(name = "userid")
@@ -118,12 +118,12 @@ public class ExpTask {
 		this.document = document;
 	}
 
-	public LogArchive getJournal() {
-		return logArchive;
+	public LogEvent getJournal() {
+		return logEvent;
 	}
 
-	public void setJournal(LogArchive logArchive) {
-		this.logArchive = logArchive;
+	public void setJournal(LogEvent logEvent) {
+		this.logEvent = logEvent;
 	}
 
 	public User getUser() {
@@ -167,7 +167,7 @@ public class ExpTask {
 	public String toString() {
 		return "ExpTask [taskId=" + taskId + ", horodatage=" + horodatage + ", dateDeb=" + dateDeb + ", dateFin="
 				+ dateFin + ", taskTypeId=" + taskTypeId + ", docId=" + document.getDocId().toString() + ", logId="
-				+ logArchive.getLogId() + ", userId=" + user.getUserId() + ", nbTries=" + nbTries + ", state=" + state
+				+ logEvent.getLogId() + ", userId=" + user.getUserId() + ", nbTries=" + nbTries + ", state=" + state
 				+ ", comments=" + comments + "]";
 	}
 }

@@ -30,6 +30,9 @@ public class ScheduleConfig implements SchedulingConfigurer {
 
 	@Value("${app.threadanalysis.cycletime}")
 	private int cycleRate;
+	
+	@Value("${app.asnytask.max-thread-pool:5}")
+	private int maxThreadPool;
 
 	@Autowired
 	private SystEnvDao systEnvDao;
@@ -45,8 +48,8 @@ public class ScheduleConfig implements SchedulingConfigurer {
 	@Bean(destroyMethod = "shutdown")
 	public ThreadPoolTaskScheduler taskScheduler() {
 		final ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
-		threadPoolTaskScheduler.setPoolSize(5);
-		threadPoolTaskScheduler.setThreadNamePrefix("ScheduledTask-");
+		threadPoolTaskScheduler.setPoolSize(maxThreadPool);
+		threadPoolTaskScheduler.setThreadNamePrefix("ScheduledBgsTask-");
 		threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(false);
 		threadPoolTaskScheduler.initialize();
 

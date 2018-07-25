@@ -3,7 +3,9 @@ package com.telino.avp.service.schedule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -36,13 +38,13 @@ public class ScheduledTaskService implements IScheduledTaskService {
 
 	@Autowired
 	private LogEventDao logEventDao;
-	
+
 	@Autowired
 	private ExpTaskDao expTaskDao;
-	
+
 	@Autowired
 	private ExpTaskBuilder expTaskBuilder;
-	
+
 	@Autowired
 	private ExpTaskChecker expTaskChecker;
 
@@ -53,7 +55,7 @@ public class ScheduledTaskService implements IScheduledTaskService {
 	 */
 	@Override
 	@Scheduled(cron = "${app.fillingTaskRate.cronexp}")
-	@Transactional(rollbackFor = Exception.class)	// Default timeout is 5 mins (jta.properties)
+	@Transactional(rollbackFor = Exception.class) // Default timeout is 5 mins (jta.properties)
 	public void scheduledFillingTask() throws ExpTaskException {
 
 		LOGGER.info("Lancement de remplissage d'exploitation ");
@@ -72,15 +74,12 @@ public class ScheduledTaskService implements IScheduledTaskService {
 
 			// Persister les taches d'exploitation dans exp_task
 			expTaskDao.saveExpTasks(expTasks);
-			
 
 			// Marque fait dans log_event
 			logEventDao.terminateExploitedEvent(logEvents);
 
-
 			LOGGER.info("Fin de remplissage d'exploitation " + expTasks.size());
-			
-			
+
 		} catch (DataAccessException e) {
 			LOGGER.error(e.getMessage());
 
@@ -98,13 +97,13 @@ public class ScheduledTaskService implements IScheduledTaskService {
 	@Scheduled(cron = "${app.exploitationTaskRate.cronexp}")
 	public void scheduledExploitationTask() throws ExpTaskException {
 		try {
-			
+
 			LOGGER.info("Abandonner les tâches d'exploitation ");
 			expTaskChecker.abortExpiredExpTask();
-			
+
 			LOGGER.info("Relancer les tâches d'exploitation ");
 			expTaskChecker.findAndRelaunchExpTask();
-			
+
 			LOGGER.info("Lancer les tâches d'exploitation initialisées");
 			expTaskChecker.findAndLaunchInitExpTask();
 
@@ -125,14 +124,19 @@ public class ScheduledTaskService implements IScheduledTaskService {
 	 */
 	private List<ExpTask> exploitLogEventForExpTask(final List<LogEvent> logEvents) {
 
-		Map<UUID, List<LogEvent>> logEventsByArchive = logEvents.stream()
-				.collect(Collectors.groupingBy(e -> e.getArchive().getDocId()));
+		Map<Optional<UUID>, List<LogEvent>> logEventsByArchive = logEvents.stream().collect(Collectors.groupingBy(
+				e -> Optional.ofNullable(Objects.isNull(e.getArchive()) ? null : e.getArchive().getDocId())));
 
 		List<ExpTask> expTasks = new ArrayList<>();
 
-		for (Entry<UUID, List<LogEvent>> el : logEventsByArchive.entrySet()) {
+		for (Entry<Optional<UUID>, List<LogEvent>> el : logEventsByArchive.entrySet()) {
 
-			if (el.getValue().size() > 1) {
+			if (!el.getKey().isPresent()) {
+				// Controle de l'integralite journal problem
+				for (LogEvent log : el.getValue())
+					expTasks.add(expTaskBuilder.buildTask(log));
+			}
+			else if (el.getValue().size() > 1) {
 				// Cas 1 : une archive qui ont deux error dans Master et Mirror respectivement
 				expTasks.add(expTaskBuilder.checkAndBuildTask(el.getValue()));
 			} else {

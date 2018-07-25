@@ -25,27 +25,28 @@ import com.telino.avp.protocol.DbEntityProtocol.LogEventDetail;
  */
 @Component
 public class ExpTaskBuilder {
-	
+
 	@Autowired
 	private UserDao userDao;
-	
-	private static final String DEFAULT_USER = "System"; 
+
+	private static final String DEFAULT_USER = "system";
 
 	/**
-	 * Creation d'un tache d'exploitation pour une archive qui ont plusieur log_event
+	 * Creation d'un tache d'exploitation pour une archive qui ont plusieur
+	 * log_event
+	 * 
 	 * @param logEvents
 	 * @return
 	 */
 	public ExpTask checkAndBuildTask(List<LogEvent> logEvents) {
-		
+
 		// Pour une meme archive, regrouper les log_event par leur causes
 		Map<String, List<LogEvent>> logEventsByCause = logEvents.stream()
 				.collect(Collectors.groupingBy(LogEvent::getDetail));
-		
+
 		User system = userDao.findByUserId(DEFAULT_USER);
-		
+
 		if (logEventsByCause.size() > 1) {
-			
 
 			// Une archive a plusieur type d'erreur
 			// Lever une tache d'exploitation par humain
@@ -61,6 +62,7 @@ public class ExpTaskBuilder {
 			task.setState(ExpTaskState.I);
 			task.setUser(system);
 			task.addComment(com);
+			task.setJournal(logEvents.get(0));
 
 			return task;
 		} else {
@@ -70,14 +72,16 @@ public class ExpTaskBuilder {
 	}
 
 	/**
-	 * Creation d'une tache d'exploit pour une archive qui on une erreur dans log_event
+	 * Creation d'une tache d'exploit pour une archive qui on une erreur dans
+	 * log_event
+	 * 
 	 * @param logEvent
 	 * @return
 	 */
 	public ExpTask buildTask(final LogEvent logEvent) {
-		
+
 		User system = userDao.findByUserId(DEFAULT_USER);
-		
+
 		ExpComment com = new ExpComment();
 		com.setComDate(ZonedDateTime.now());
 		com.setUser(system);
@@ -89,38 +93,44 @@ public class ExpTaskBuilder {
 		task.setState(ExpTaskState.I);
 		task.setUser(system);
 		task.addComment(com);
+		task.setJournal(logEvent);
 
 		// Deduire le type de tache d'exploitation
-		switch (LogEventDetail.valueOf(logEvent.getDetail())) {
-		case HASH_NOT_MATCH_ERROR_IN_MASTER:
-			task.setTaskType(ExpTaskType.CHECK_RESTORE_MASTER_HASH);
-			break;
-		case HASH_NOT_MATCH_ERROR_IN_MIRROR:
-			task.setTaskType(ExpTaskType.CHECK_RESTORE_MIRROR_HASH);
-			break;
-		case NOT_FOUND_ERROR_IN_MASTER:
-			task.setTaskType(ExpTaskType.RESTORE_MASTER_FILE);
-			break;
-		case NOT_FOUND_ERROR_IN_MIRROR:
-			task.setTaskType(ExpTaskType.RESTORE_MIRROR_FILE);
-			break;
-		case DECRYPT_ERROR_IN_MASTER:
-		case DECRYPT_ERROR_IN_MIRROR:
-		case SHA_HASH_ERROR_IN_MASTER:
-		case SHA_HASH_ERROR_IN_MIRROR:
-			task.setTaskType(ExpTaskType.RELAUNCH_FILE_ENTIRETY_CHECK);
-			break;
-		case ENTIRETY_ERROR_IN_MASTER:
-			task.setTaskType(ExpTaskType.CHECK_RESTORE_MASTER_METADATA);
-			break;
-		case ENTIRETY_ERROR_IN_MIRROR:
-			task.setTaskType(ExpTaskType.CHECK_RESTORE_MIRROR_METADATA);
-			break;
-		default:
+		try {
+			switch (LogEventDetail.valueOf(logEvent.getDetail())) {
+			case HASH_NOT_MATCH_ERROR_IN_MASTER:
+				task.setTaskType(ExpTaskType.CHECK_RESTORE_MASTER_HASH);
+				break;
+			case HASH_NOT_MATCH_ERROR_IN_MIRROR:
+				task.setTaskType(ExpTaskType.CHECK_RESTORE_MIRROR_HASH);
+				break;
+			case NOT_FOUND_ERROR_IN_MASTER:
+				task.setTaskType(ExpTaskType.RESTORE_MASTER_FILE);
+				break;
+			case NOT_FOUND_ERROR_IN_MIRROR:
+				task.setTaskType(ExpTaskType.RESTORE_MIRROR_FILE);
+				break;
+			case DECRYPT_ERROR_IN_MASTER:
+			case DECRYPT_ERROR_IN_MIRROR:
+			case SHA_HASH_ERROR_IN_MASTER:
+			case SHA_HASH_ERROR_IN_MIRROR:
+				task.setTaskType(ExpTaskType.RELAUNCH_FILE_ENTIRETY_CHECK);
+				break;
+			case ENTIRETY_ERROR_IN_MASTER:
+				task.setTaskType(ExpTaskType.CHECK_RESTORE_MASTER_METADATA);
+				break;
+			case ENTIRETY_ERROR_IN_MIRROR:
+				task.setTaskType(ExpTaskType.CHECK_RESTORE_MIRROR_METADATA);
+				break;
+			default:
+				task.setTaskType(ExpTaskType.NEED_HUMAN_INTERVENTION);
+				break;
+			}
+		} catch (IllegalArgumentException e) {
+			// Type error not known
 			task.setTaskType(ExpTaskType.NEED_HUMAN_INTERVENTION);
-			break;
 		}
-
+		
 		return task;
 	}
 }
