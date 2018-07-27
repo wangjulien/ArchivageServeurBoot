@@ -40,7 +40,7 @@ public class StartCdmsAnalysisController {
 	public void doGetAndPost(@RequestParam("nomBase") String nomBase, HttpServletRequest request,
 			HttpServletResponse response) {
 
-		LOGGER.info(" entering startCdmsAnalysis V0 " + nomBase);
+		LOGGER.info("Entering startCdmsAnalysis V0 " + nomBase);
 
 		try {
 			@SuppressWarnings("unchecked")
@@ -48,9 +48,7 @@ public class StartCdmsAnalysisController {
 																											// trame
 			// parse trame
 			String param = trame.get("ordre").toString();
-			
-			// TODO: if use Multi-tenant DataSource mecanisme for launch background serivce in different Database
-			
+						
 			// Start the back ground service by database name
 			if (param.contains("start")) {
 				if (ScheduleConfig.CTE.get(nomBase) == null) {

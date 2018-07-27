@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import javax.persistence.PersistenceException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -25,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.telino.avp.dao.DepotDao;
 import com.telino.avp.entity.archive.Depot;
+import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
@@ -75,7 +75,7 @@ public class ArchivageApiController {
 					result.put("codeRetour", ReturnCode.OK.toString());
 
 					LOGGER.info(" Réinit effectué - nfz42013");
-				} catch (PersistenceException e) {
+				} catch (AvpExploitException | AvpDaoException e) {
 					LOGGER.error(e.getMessage());
 					result.put("codeRetour", ReturnCode.KO.toString());
 					result.put("message", e.getMessage());
@@ -180,7 +180,8 @@ public class ArchivageApiController {
 			} else {
 				if (Commande.STORE.toString().equals((String) header.get("command")))
 					trame.put("iddepot", depot.getIdDepot().toString());
-
+				
+				// TODO : ??? What's this code for?
 				Map<String, Object> printObject = new HashMap<>();
 				if (trame.containsKey("content")) {
 					Iterator<String> IT = trame.keySet().iterator();

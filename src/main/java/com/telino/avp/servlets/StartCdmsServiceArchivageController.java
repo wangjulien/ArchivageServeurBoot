@@ -33,12 +33,6 @@ public class StartCdmsServiceArchivageController {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StartCdmsServiceArchivageController.class);
 
-	// @Resource
-	// private DataSource masterDynamicDs;
-	//
-	// @Resource
-	// private DataSource mirrorDynamicDs;
-
 	@Autowired
 	private SwitchDataSourceService switchDataSourceService;
 
@@ -121,16 +115,15 @@ public class StartCdmsServiceArchivageController {
 		try {
 			conn.commit();
 			conn.close();
-			LOGGER.info(" committ effectué", "nfz42013");
-			if (connMirror != null) {
+			LOGGER.info("Committ effectué", "nfz42013");
+			if (Objects.nonNull(connMirror)) {
 				connMirror.commit();
-				LOGGER.info(" committ mirror effectué", "nfz42013");
+				LOGGER.info("Committ mirror effectué", "nfz42013");
 				connMirror.close();
 			}
 			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
-			// Disconnect();
+			LOGGER.error("Commit echoué : " + e.getCause());
 		}
 		return true;
 
@@ -140,17 +133,16 @@ public class StartCdmsServiceArchivageController {
 		try {
 			conn.rollback();
 			conn.close();
-			if (connMirror != null) {
+			if (Objects.nonNull(connMirror)) {
 				connMirror.rollback();
 				connMirror.close();
 			}
 			LOGGER.error(" rollback effectué", "nfz42013");
-			// Disconnect();
 			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Rollback echoué : " + e.getCause());
 		}
-		// Disconnect();
+		
 		return false;
 	}
 
@@ -168,7 +160,7 @@ public class StartCdmsServiceArchivageController {
 			conn.setAutoCommit(false); // pas d'autocommit
 			conn.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
 		} catch (Exception e) {
-			System.err.println(Thread.currentThread().getId() + " CONNECT Z " + e.getMessage());
+			LOGGER.error(Thread.currentThread().getId() + " CONNECT Z " + e.getMessage());
 		}
 
 		return conn;

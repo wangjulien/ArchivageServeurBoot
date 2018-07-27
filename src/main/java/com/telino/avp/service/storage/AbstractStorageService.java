@@ -1,6 +1,5 @@
 package com.telino.avp.service.storage;
 
-import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +12,7 @@ import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.auxil.Journal;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
+import com.telino.avp.protocol.DbEntityProtocol.DocumentStatut;
 import com.telino.avp.service.journal.AbstractJournalService;
 import com.telino.avp.tools.FillPdfForm;
 
@@ -80,14 +80,14 @@ public abstract class AbstractStorageService {
 	 * @throws AvpExploitException
 	 */
 	public Document archive(final String operation, final Document doc) throws AvpExploitException {
-		byte[] content = FillPdfForm.buildAttestation(operation, doc);
+		byte[] content = FillPdfForm.getAttestationFilled(operation, doc);
 		
 		Document attestation = new Document();
 		
 		attestation.setArchiveDate(ZonedDateTime.now());
 		attestation.setContent(content);
 		attestation.setDate(ZonedDateTime.now());
-		attestation.setTitle(operation + "_" + Paths.get(doc.getTitle()).getParent() + ".pdf");
+		attestation.setTitle(operation + "_" + doc.getTitle().replaceAll("\\.", "_") + ".pdf");
 		attestation.setContentType("application/pdf");
 		attestation.setDomnNom(doc.getDomaineowner());
 		attestation.setServiceverseur(doc.getServiceverseur());
@@ -95,7 +95,7 @@ public abstract class AbstractStorageService {
 		attestation.setServiceverseur(doc.getServiceverseur());
 		int contentLength = content.length;
 		attestation.setContentLength(contentLength);
-		attestation.setStatut(2);
+		attestation.setStatut(DocumentStatut.ATTESTATION.getStatutCode());
 		attestation.setDepot(null);	// Depot ID 0
 		attestation.setProfile(doc.getProfile());
 		if (!archive(attestation)) {
@@ -132,7 +132,7 @@ public abstract class AbstractStorageService {
 		int contentLength = content.length;
 		logDoc.setProfile(profileDao.findByParId(1)); 
 		logDoc.setContentLength(contentLength);
-		logDoc.setStatut(3);
+		logDoc.setStatut(DocumentStatut.LOG_DOC.getStatutCode());
 		logDoc.setDepot(null);
 		if (!archive(logDoc)) {
 			throw new AvpExploitException("520",

@@ -18,7 +18,7 @@ public interface MasterLogEventRepository extends JpaRepository<LogEvent, UUID> 
 
 	@Query(value = "select distinct ev.* from log_event ev left join log_archive ar "
 			+ "on ev.archiveid = ar.docid  and ar.logtype = :arcType where ev.logtype = :evtType and ev.statexp = :evtState "
-			+ "order by ev.timestamp", nativeQuery = true)
+			+ "order by ev.timestamp desc", nativeQuery = true)
 	public List<LogEvent> findAllArchiveIdFailedCheckEntirety(@Param("arcType") String arcType,
 			@Param("evtType") String evtType, @Param("evtState") String evtState);
 

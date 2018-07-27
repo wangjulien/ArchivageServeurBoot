@@ -94,7 +94,7 @@ public class checkpar_rights extends MainObject {
 					+ CurrentObjectValues.get("par_canrestitute");
 
 			String operation = "Attestation de " + mode + " du profil d'archivage - " + profil + " -";
-			byte[] content = FillPdfForm.buildAttestation(operation, action);
+			byte[] content = FillPdfForm.getAttestationFilled(operation, action);
 			Document attestation = new Document();
 			attestation.setArchiveDate(ZonedDateTime.now());
 			attestation.setContent(content);

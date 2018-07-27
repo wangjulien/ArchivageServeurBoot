@@ -79,7 +79,7 @@ public class checkprofils extends MainObject {
 
 			String operation = "Attestation de " + mode + " du profil d'archivage - "
 					+ CurrentObjectValues.get("ar_profile") + " -";
-			byte[] content = FillPdfForm.buildAttestation(operation, action);
+			byte[] content = FillPdfForm.getAttestationFilled(operation, action);
 			Document attestation = new Document();
 			attestation.setArchiveDate(ZonedDateTime.now());
 			attestation.setContent(content);

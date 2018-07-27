@@ -52,6 +52,7 @@ import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
+import com.telino.avp.protocol.DbEntityProtocol.DocumentStatut;
 import com.telino.avp.protocol.DbEntityProtocol.DraftStatut;
 import com.telino.avp.protocol.DbEntityProtocol.LogArchiveType;
 import com.telino.avp.protocol.DbEntityProtocol.LogEventType;
@@ -217,7 +218,7 @@ public class DocumentService {
 				resultat.put("codeRetour", ReturnCode.KO.toString());
 				String message = (String) resultat.get("message");
 				resultat.put("message",
-						message + "/nControle de scellement des journaux echoues pour ces documents : \n" + docIds);
+						message + "\nControle de scellement des journaux echoues pour ces documents : \n" + docIds);
 			}
 
 		} catch (NullPointerException | IOException e) {
@@ -1258,7 +1259,7 @@ public class DocumentService {
 			document.setLot((String) input.get("lot"));
 			document.setConteneur((String) input.get("conteneur"));
 			document.setArchiverId(user);
-			document.setStatut(0);
+			document.setStatut(DocumentStatut.REARDY_FOR_ARCHIVE.getStatutCode());
 
 			if (storageService.archive(document)) {
 				LOGGER.info("document stored - nfz42013");

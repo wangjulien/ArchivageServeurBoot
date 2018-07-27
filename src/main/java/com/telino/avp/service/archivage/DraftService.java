@@ -1,8 +1,10 @@
 package com.telino.avp.service.archivage;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.telino.avp.dao.DraftDao;
@@ -31,7 +34,10 @@ import tools.ApercuManager;
 public class DraftService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DraftService.class);
-
+	
+	@Value("server.tomcat.basedir")
+	private String antiVirusTmpPath;
+	
 	@Autowired
 	private DraftDao draftDao;
 
@@ -236,9 +242,20 @@ public class DraftService {
 			throws AvpExploitException {
 
 		// Save in a temporary dir the draft
-		File file = new File(getClass().getResource("/antivirus/tmp").getFile() + "/" + input.get("title"));
+		Path tmpPath = Paths.get(antiVirusTmpPath + "/antivirus/tmp/" + input.get("title"));
+		
 		try {
-			Files.write(file.toPath(), (byte[]) input.get("content"));
+			// Create folders if not exits
+			Files.createDirectories(tmpPath.getParent());
+			
+			// Delete exisiting same name file
+			if (Files.exists(tmpPath)) { 
+				Files.delete(tmpPath);
+			}
+			
+			// Write the temporary file
+			Files.createFile(tmpPath);
+			Files.write(tmpPath, (byte[]) input.get("content"), StandardOpenOption.TRUNCATE_EXISTING);
 		} catch (IOException e1) {
 			throw new AvpExploitException("901", e1, "Écriture du fichier dans un répertoire temporaire", null, null,
 					null);
@@ -246,7 +263,7 @@ public class DraftService {
 
 		// !!! deactiver antivirus pour tester
 //		try {
-//			ProcessBuilder pb = new ProcessBuilder("clamdscan", file.getAbsolutePath());
+//			ProcessBuilder pb = new ProcessBuilder("clamdscan", tmpPath.toString());
 //			Process p = pb.start();
 //
 //			AfficheurFluxExec fluxSortie = new AfficheurFluxExec(p.getInputStream());
@@ -268,22 +285,22 @@ public class DraftService {
 //				Map<String, String> scanAntiVirus = analyseScan(result);
 //				if (scanAntiVirus != null) {
 //					if (scanAntiVirus.get("nbErrors") != null && !scanAntiVirus.get("nbErrors").equals("0")) {
-//						file.delete();
+//						Files.delete(tmpPath);
 //						throw new AvpExploitException("903", null, "Scan antivirus du fichier " + input.get("title"),
 //								null, null, null);
 //					} else if (scanAntiVirus.get("nbInfected") == null
 //							|| !scanAntiVirus.get("nbInfected").equals("0")) {
-//						file.delete();
+//						Files.delete(tmpPath);
 //						throw new AvpExploitException("904", null, "Scan antivirus du fichier " + input.get("title"),
 //								null, null, null);
 //					}
 //				} else {
-//					file.delete();
+//					Files.delete(tmpPath);
 //					throw new AvpExploitException("902", null, "Scan antivirus du fichier " + input.get("title"), null,
 //							null, null);
 //				}
 //			} else {
-//				file.delete();
+//				Files.delete(tmpPath);
 //				throw new AvpExploitException("902", new Exception("" + fluxErreur.toString()),
 //						"Scan antivirus du fichier " + input.get("title"), null, null, null);
 //			}
@@ -295,15 +312,15 @@ public class DraftService {
 //			throw new AvpExploitException("902", e, "Scan antivirus du fichier " + input.get("title"), null, null,
 //					null);
 //		}
-
-		// Validation of format
+//
+//		// Validation of format
 //		Format format = null;
-//		if (file.getName().equals(input.get("title"))) {
+//		if (tmpPath.getFileName().toString().equals(input.get("title"))) {
 //			ValidatorFactory factory = new ValidatorFactory();
 //			Validator v = null;
 //			try {
 //				try {
-//					v = factory.createValidator(file);
+//					v = factory.createValidator(tmpPath.toFile());
 //				} catch (UnknownFormatException e1) {
 //					if ("application/pdf".equals((String) input.get("content_type"))) {
 //						
@@ -334,7 +351,7 @@ public class DraftService {
 //					}
 //				}
 //				format = v.identify();
-//				LOGGER.info(file.getName() + " ==> format identifié : " + format + ". Valide ? " + v.isValid()
+//				LOGGER.info(tmpPath.getFileName().toString() + " ==> format identifié : " + format + ". Valide ? " + v.isValid()
 //						+ " ..." + v.getMessage());
 //				
 //				if (!v.isValid()) {
@@ -349,7 +366,12 @@ public class DraftService {
 //				throw new AvpExploitException("402", e1, "Identification du format du fichier " + input.get("title"),
 //						null, null, null);
 //			} finally {
-//				file.delete();
+//				try {
+//					Files.delete(tmpPath);
+//				} catch (IOException e) {
+//					throw new AvpExploitException("402", e, "Identification du format du fichier " + input.get("title"),
+//							null, null, null);
+//				}
 //			}
 //		}
 

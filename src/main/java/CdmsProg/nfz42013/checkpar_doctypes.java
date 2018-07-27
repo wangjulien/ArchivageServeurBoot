@@ -105,7 +105,7 @@ public class checkpar_doctypes extends MainObject {
 					+ content_types_String;
 
 			String operation = "Attestation de modification du profil d'archivage - " + profil + " -";
-			byte[] content = FillPdfForm.buildAttestation(operation, action);
+			byte[] content = FillPdfForm.getAttestationFilled(operation, action);
 			Document attestation = new Document();
 			attestation.setArchiveDate(ZonedDateTime.now());
 			attestation.setContent(content);

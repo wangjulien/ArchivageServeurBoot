@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.telino.avp.dto.DocumentDto;
 import com.telino.avp.entity.param.StorageParam;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpServiceException;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
@@ -37,7 +38,7 @@ public class FSProcRemote implements FSProc {
 				&& Objects.nonNull(storageParam.getHostName())) {
 			storageParamLocal.set(storageParam);
 		} else {
-			throw new Exception(
+			throw new AvpServiceException(
 					"Impossible d'initialiser le module de stockage local car les paramètres de stockages ne correspondent pas");
 		}
 
