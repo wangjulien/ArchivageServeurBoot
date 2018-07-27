@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<items xmlns="http://www.cines.fr/validator">
+ <item value="ascii text" format="TXT/ASCII" />
+ <item value="SVG Scalable Vector Graphics image" format="SVG" />
+ <item value="utf-8 unicode text" format="UTF-8" />
+ <item value="Hierarchical Data Format (version 5) data" format="hdf\\5" />
+ <item value="JPEG-2000 Code Stream Bitmap data" format="JP2" />
+</items>

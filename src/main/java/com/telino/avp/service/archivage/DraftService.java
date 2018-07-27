@@ -1,5 +1,6 @@
 package com.telino.avp.service.archivage;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -21,6 +23,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.verapdf.core.EncryptedPdfException;
+import org.verapdf.core.ModelParsingException;
+import org.verapdf.core.ValidationException;
+import org.verapdf.pdfa.Foundries;
+import org.verapdf.pdfa.PDFAParser;
+import org.verapdf.pdfa.PDFAValidator;
+import org.verapdf.pdfa.VeraGreenfieldFoundryProvider;
+import org.verapdf.pdfa.results.ValidationResult;
 
 import com.telino.avp.dao.DraftDao;
 import com.telino.avp.entity.archive.Draft;
@@ -28,6 +38,10 @@ import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.DbEntityProtocol.DraftStatut;
 import com.telino.avp.service.journal.TamponHorodatageService;
 
+import fr.cines.Format;
+import fr.cines.format.validator.UnknownFormatException;
+import fr.cines.format.validator.Validator;
+import fr.cines.validator.ValidatorFactory;
 import tools.ApercuManager;
 
 @Service
@@ -35,7 +49,7 @@ public class DraftService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DraftService.class);
 	
-	@Value("server.tomcat.basedir")
+	@Value("${server.tomcat.basedir}")
 	private String antiVirusTmpPath;
 	
 	@Autowired
@@ -313,67 +327,67 @@ public class DraftService {
 //					null);
 //		}
 //
-//		// Validation of format
-//		Format format = null;
-//		if (tmpPath.getFileName().toString().equals(input.get("title"))) {
-//			ValidatorFactory factory = new ValidatorFactory();
-//			Validator v = null;
-//			try {
-//				try {
-//					v = factory.createValidator(tmpPath.toFile());
-//				} catch (UnknownFormatException e1) {
-//					if ("application/pdf".equals((String) input.get("content_type"))) {
-//						
-//						VeraGreenfieldFoundryProvider.initialise();
-//						try (PDFAParser parser = Foundries.defaultInstance()
-//								.createParser(new ByteArrayInputStream((byte[]) input.get("content")))) {
-//							PDFAValidator validator = Foundries.defaultInstance().createValidator(parser.getFlavour(),
-//									false);
-//							ValidationResult result = validator.validate(parser);
-//							if (!result.isCompliant()) {
-//								resultat.put("codeRetour", "4");
-//								resultat.put("message", "Le fichier" + input.get("title") + " n'est pas conforme");
-//								return;
-//							}
-//						} catch (NoSuchElementException | ModelParsingException | EncryptedPdfException
-//								| ValidationException e) {
-//							resultat.put("codeRetour", "4");
-//							resultat.put("message", "Le format du fichier " + input.get("title").toString()
-//									+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
-//							return;
-//						}
-//
-//					} else {
-//						resultat.put("codeRetour", "4");
-//						resultat.put("message", "Le format du fichier " + input.get("title").toString()
-//								+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
-//						return;
-//					}
-//				}
-//				format = v.identify();
-//				LOGGER.info(tmpPath.getFileName().toString() + " ==> format identifié : " + format + ". Valide ? " + v.isValid()
-//						+ " ..." + v.getMessage());
-//				
-//				if (!v.isValid()) {
-//					resultat.put("codeRetour", "4");
-//					resultat.put("message", "Le fichier " + input.get("title").toString() + " n'est pas valide. ");
-//					return;
-//				}
-//			} catch (IOException e1) {
-//				throw new AvpExploitException("402", e1, "Identification du format du fichier " + input.get("title"),
-//						null, null, null);
-//			} catch (UnknownFormatException e1) {
-//				throw new AvpExploitException("402", e1, "Identification du format du fichier " + input.get("title"),
-//						null, null, null);
-//			} finally {
-//				try {
-//					Files.delete(tmpPath);
-//				} catch (IOException e) {
-//					throw new AvpExploitException("402", e, "Identification du format du fichier " + input.get("title"),
-//							null, null, null);
-//				}
-//			}
-//		}
+		// Validation of format
+		Format format = null;
+		if (tmpPath.getFileName().toString().equals(input.get("title"))) {
+			ValidatorFactory factory = new ValidatorFactory();
+			Validator v = null;
+			try {
+				try {
+					v = factory.createValidator(tmpPath.toFile());
+				} catch (UnknownFormatException e1) {
+					if ("application/pdf".equals((String) input.get("content_type"))) {
+						
+						VeraGreenfieldFoundryProvider.initialise();
+						try (PDFAParser parser = Foundries.defaultInstance()
+								.createParser(new ByteArrayInputStream((byte[]) input.get("content")))) {
+							PDFAValidator validator = Foundries.defaultInstance().createValidator(parser.getFlavour(),
+									false);
+							ValidationResult result = validator.validate(parser);
+							if (!result.isCompliant()) {
+								resultat.put("codeRetour", "4");
+								resultat.put("message", "Le fichier" + input.get("title") + " n'est pas conforme");
+								return;
+							}
+						} catch (NoSuchElementException | ModelParsingException | EncryptedPdfException
+								| ValidationException e) {
+							resultat.put("codeRetour", "4");
+							resultat.put("message", "Le format du fichier " + input.get("title").toString()
+									+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
+							return;
+						}
+
+					} else {
+						resultat.put("codeRetour", "4");
+						resultat.put("message", "Le format du fichier " + input.get("title").toString()
+								+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
+						return;
+					}
+				}
+				format = v.identify();
+				LOGGER.info(tmpPath.getFileName().toString() + " ==> format identifié : " + format + ". Valide ? " + v.isValid()
+						+ " ..." + v.getMessage());
+				
+				if (!v.isValid()) {
+					resultat.put("codeRetour", "4");
+					resultat.put("message", "Le fichier " + input.get("title").toString() + " n'est pas valide. ");
+					return;
+				}
+			} catch (IOException e1) {
+				throw new AvpExploitException("402", e1, "Identification du format du fichier " + input.get("title"),
+						null, null, null);
+			} catch (UnknownFormatException e1) {
+				throw new AvpExploitException("402", e1, "Identification du format du fichier " + input.get("title"),
+						null, null, null);
+			} finally {
+				try {
+					Files.delete(tmpPath);
+				} catch (IOException e) {
+					throw new AvpExploitException("402", e, "Identification du format du fichier " + input.get("title"),
+							null, null, null);
+				}
+			}
+		}
 
 		// Save draft meta data dans les DB
 		Draft draft = new Draft();
