@@ -28,7 +28,7 @@ public class FSProcRemote implements FSProc {
 	@Autowired
 	private RemoteCall remoteCall;
 
-	private static ThreadLocal<StorageParam> storageParamLocal = new ThreadLocal<>();
+	private ThreadLocal<StorageParam> storageParamLocal = new ThreadLocal<>();
 
 	@Override
 	public void init(final StorageParam storageParam) throws Exception {
@@ -123,7 +123,7 @@ public class FSProcRemote implements FSProc {
 				throw new AvpExploitException("512", null, "Suppression d'une archive par le module de stockage", null,
 						null, null);
 			} else {
-				throw new AvpExploitException("515", (Throwable) json.get("message"),
+				throw new AvpExploitException("515", null,
 						"Suppression d'une archive par le module de stockage", null, null, null);
 			}
 		} else {

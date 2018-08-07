@@ -208,12 +208,7 @@ public class FsStorageService extends AbstractStorageService {
 		// Lancer suppression de fichier du document dans unite mirror
 		fsprocMaster.deleteFile(document.getEmpreinte().getEmpreinteUnique());
 
-		try {
-			documentDao.deleteMetaDonneesDocument(document);
-		} catch (PersistenceException e) {
-			LOGGER.error("impossible de supprimer les meta-donnee pour la raison suivante : " + e.getMessage());
-			return false;
-		}
+		
 		return true;
 	}
 

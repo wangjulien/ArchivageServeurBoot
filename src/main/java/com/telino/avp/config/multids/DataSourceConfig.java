@@ -1,5 +1,6 @@
 package com.telino.avp.config.multids;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "spring")
 public class DataSourceConfig {
 
-	private List<DsConfigObject> dsConfigList;
+	private List<DsConfigObject> dsConfigList = new ArrayList<>();
 
 	public List<DsConfigObject> getDsConfigList() {
 		return dsConfigList;

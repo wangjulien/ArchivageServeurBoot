@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xml>
 <configuration scan="true" scanPeriod="30 seconds">
-	
-	<springProperty scope="context" name="LOG_HOME" source="server.tomcat.basedir"/>
+
+	<springProperty scope="context" name="LOG_HOME"
+		source="server.tomcat.basedir" />
 	<property name="LOG_NAME" value="archivage_serveur_boot" />
 
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+	<appender name="console"
+		class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
 			<pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} [%thread] %-5level %logger{0} - %msg%n</pattern>
 		</encoder>
@@ -15,18 +17,21 @@
 	<appender name="file"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<file>${LOG_HOME}/logs/${LOG_NAME}.log</file>
-		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+		<encoder
+			class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
 			<charset>UTF-8</charset>
 			<pattern>%d{yyyy-MM-dd_HH:mm:ss.SSS} [%thread] %-5level %logger{0} - %msg%n</pattern>
 		</encoder>
 
-		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+		<rollingPolicy
+			class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
 			<FileNamePattern>${LOG_HOME}/logs/${LOG_NAME}_%i.log</FileNamePattern>
 			<MinIndex>1</MinIndex>
 			<MaxIndex>10</MaxIndex>
 		</rollingPolicy>
 
-		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+		<triggeringPolicy
+			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
 			<MaxFileSize>2MB</MaxFileSize>
 		</triggeringPolicy>
 	</appender>
@@ -36,9 +41,12 @@
 	<!-- <logger name="org.hibernate" level="ERROR" /> -->
 
 	<root level="info">
-		<!-- uncomment file -->
-		<appender-ref ref="file"/>
-<!-- 		<appender-ref ref="console" /> -->
+		<springProfile name="production">
+			<appender-ref ref="file" />
+		</springProfile>
+		<springProfile name="!production">
+			<appender-ref ref="console" />
+		</springProfile>
 	</root>
 
 </configuration>

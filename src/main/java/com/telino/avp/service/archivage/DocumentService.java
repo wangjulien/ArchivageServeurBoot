@@ -466,23 +466,27 @@ public class DocumentService {
 				titre = "Attestation de restitution";
 			}
 
-			// Creation of a attestation
+			// Creation of a attestation de suppression
 			Document attestation = storageService.archive(titre, document);
 			attestation = storageService.get(attestation.getDocId());
-
+			
 			// Log in LogArchive
-			Map<String, Object> inputToLog = new HashMap<>();
-			inputToLog.put("operation", operation);
-			inputToLog.put("docid", document.getDocId().toString());
-			inputToLog.put("userid", userId);
-			inputToLog.put("mailid", (String) input.get("mailid"));
-			inputToLog.put("docsname", document.getTitle());
-			inputToLog.put("attestationid", attestation.getDocId().toString());
-			inputToLog.put("hash",
-					Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
-			inputToLog.put("logtype", LogArchiveType.A.toString());
-			journalArchiveService.log(inputToLog);
-
+			LogArchive logArchive = new LogArchive();
+			logArchive.setOperation(operation);
+			logArchive.setDocument(document);
+			logArchive.setUser(userDao.findByUserId(userId));
+			logArchive.setMailId((String) input.get("mailid"));
+			logArchive.setDocsName(document.getTitle());
+			logArchive.setAttestation(attestation);
+			logArchive.setHash(Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
+			logArchive.setLogType(LogArchiveType.A.toString());		
+			journalArchiveService.setHorodatageAndSave(logArchive);
+			
+			//
+			// Suppression de metadonnee
+			//
+			documentDao.deleteMetaDonneesDocument(document);
+			
 			resultDelete.put("codeRetour", ReturnCode.OK.toString());
 			resultDelete.put("message", "");
 		} else {

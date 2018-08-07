@@ -1,0 +1,101 @@
+server:
+  port: 8087
+  servlet:
+    context-path: /archivageserveur
+    context-parameters:
+      log4j-configLocation: log4j.properties
+  tomcat:
+    accesslog:
+      enabled: true
+    basedir: /home/tomcat/tomcat
+    
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+        
+spring:
+#  main:
+#    banner-mode: 'log'
+  jpa:
+    database: POSTGRESQL
+    database-platform: org.hibernate.dialect.PostgreSQL95Dialect
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        temp:
+          use_jdbc_metadata_defaults: false
+  dsConfigList:
+    - 
+      id: AVPNAV
+      driver-class-name: org.postgresql.xa.PGXADataSource
+      host: 192.168.4.7
+      port: 5432
+      db: avpnav
+      username: cdms
+      password: cdms123!
+      pool: 5
+    - 
+      id: AVP_TEST
+      driver-class-name: org.postgresql.xa.PGXADataSource
+      host: 192.168.4.7
+      port: 5432
+      db: avp_test
+      username: cdms
+      password: cdms123!
+      pool: 5
+    - 
+      id: AVP_TEST_M
+      driver-class-name: org.postgresql.xa.PGXADataSource
+      host: 192.168.4.7
+      port: 5432
+      db: avp_test_m
+      username: cdms
+      password: cdms123!
+      pool: 5
+#    - 
+#      id: AVP_JULY
+#      driver-class-name: org.postgresql.xa.PGXADataSource
+#      host: 192.168.4.7
+#      port: 5432
+#      db: avp_july
+#      username: cdms
+#      password: cdms123!
+#      pool: 5
+#    - 
+#      id: AVP_JULY_M
+#      driver-class-name: org.postgresql.xa.PGXADataSource
+#      host: 192.168.4.7
+#      port: 5432
+#      db: avp_july_m
+#      username: cdms
+#      password: cdms123!
+#      pool: 5
+
+logging:
+  level:
+    org.hibernate.engine.jdbc.env.internal.LobCreatorBuilderImpl: ERROR
+    com.atomikos.icatch.jta.TransactionManagerImp: ERROR
+
+app: 
+  archivageserveur: 
+    url: http://localhost:8087/archivageserveur/ArchivageService
+# cron expression of filling task rate (every 10 minute)
+  fillingTaskRate:
+    cronexp: 0 0/10 * 1/1 * ?
+# cron expression of exploitqtion task rate (every 10 minutes)
+  exploitationTaskRate:
+    cronexp: 0 0/10 * 1/1 * ?
+# Maximum checkfiles thread = nb of http request
+  asnytask:
+    max-thread-pool: 5
+# Backgroud service (in minute)
+  threadanalysis: 
+    cycletime: 1

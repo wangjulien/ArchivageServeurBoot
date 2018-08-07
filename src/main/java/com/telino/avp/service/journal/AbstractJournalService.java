@@ -60,6 +60,12 @@ public abstract class AbstractJournalService {
 
 		traitementPreScellement(listArchive);
 
+		// For the sack of TIMESTAMP order, We need to make Log of sealling after the Logs of "attestation d'archive"
+		try {
+			Thread.sleep(1); // 1 ms 
+		} catch (InterruptedException e1) {
+		}
+		
 		// Persist un nouveau Log
 		Journal journal = bookLogId();
 		// Recupere contenu a sceller depuis Database Master (isMirror = false)

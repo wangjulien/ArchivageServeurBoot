@@ -1,20 +1,13 @@
 server:
   port: 8087
   servlet:
-    contextPath: /archivageserveur
-    contextParameters:
-      log4jConfigLocation: log4j.properties
+    context-path: /archivageserveur
+    context-parameters:
+      log4j-config-location: log4j.properties
   tomcat:
     accesslog:
       enabled: true
     basedir: /home/tomcat/tomcat
-    
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: '*'
         
 spring:
   main:
@@ -29,13 +22,13 @@ spring:
       hibernate:
         jdbc:
           lob:
-            non_contextual_creation: true
+            non-contextual-creation: true
         temp:
-          use_jdbc_metadata_defaults: false
+          use-jdbc-metadata-defaults: false
   dsConfigList:
     - 
       id: AVPNAV
-      driverClassName: org.postgresql.xa.PGXADataSource
+      driver-class-name: org.postgresql.xa.PGXADataSource
       host: 192.168.4.7
       port: 5432
       db: avpnav
@@ -44,7 +37,7 @@ spring:
       pool: 5
     - 
       id: AVP_TEST
-      driverClassName: org.postgresql.xa.PGXADataSource
+      driver-class-name: org.postgresql.xa.PGXADataSource
       host: 192.168.4.7
       port: 5432
       db: avp_test
@@ -53,7 +46,7 @@ spring:
       pool: 5
     - 
       id: AVP_TEST_M
-      driverClassName: org.postgresql.xa.PGXADataSource
+      driver-class-name: org.postgresql.xa.PGXADataSource
       host: 192.168.4.7
       port: 5432
       db: avp_test_m
@@ -62,7 +55,7 @@ spring:
       pool: 5
 #    - 
 #      id: AVP_JULY
-#      driverClassName: org.postgresql.xa.PGXADataSource
+#      driver-class-name: org.postgresql.xa.PGXADataSource
 #      host: 192.168.4.7
 #      port: 5432
 #      db: avp_july
@@ -71,7 +64,7 @@ spring:
 #      pool: 5
 #    - 
 #      id: AVP_JULY_M
-#      driverClassName: org.postgresql.xa.PGXADataSource
+#      driver-class-name: org.postgresql.xa.PGXADataSource
 #      host: 192.168.4.7
 #      port: 5432
 #      db: avp_july_m
@@ -81,8 +74,7 @@ spring:
 
 logging:
   level:
-    org.hibernate.engine.jdbc.env.internal.LobCreatorBuilderImpl: ERROR
-    com.atomikos.icatch.jta.TransactionManagerImp: ERROR
+    root: ERROR
 
 app: 
   archivageserveur: 

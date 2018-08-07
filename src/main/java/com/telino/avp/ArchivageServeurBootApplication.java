@@ -14,7 +14,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import com.telino.avp.config.multids.DataSourceConfig;
 import com.telino.avp.config.multids.DataSourceConfig.DsConfigObject;
@@ -22,7 +21,6 @@ import com.telino.avp.config.multids.DataSourceConfig.DsConfigObject;
 @SpringBootApplication(scanBasePackages = { "com.telino.avp", "CdmsProg.nfz42013" })
 @EnableScheduling
 @EnableAsync
-@EnableWebMvc
 public class ArchivageServeurBootApplication {
 
 	public static ApplicationContext SPRING_CONTEXT;
