@@ -14,6 +14,9 @@ import javax.persistence.NamedNativeQuery;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.context.User;
 
@@ -42,7 +45,11 @@ public class LogArchive extends Journal {
 	@Column(name = "logid")
 	private UUID logId;
 	
+	// When a Document is deleted, the raltionship should not be loaded
+	// either we can use Hibernate @NotFound and "NotFoundAction.IGNORE"
+	// or we can use JPA "fetch = Fecth.LAZY"
 	@ManyToOne
+	@NotFound(action = NotFoundAction.IGNORE)
 	@JoinColumn(name = "docid")
 	private Document document;
 

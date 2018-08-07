@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.telino.avp.dto.DocumentDto;
 import com.telino.avp.entity.param.StorageParam;
 import com.telino.avp.exception.AvpExploitException;
-import com.telino.avp.exception.AvpServiceException;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
@@ -38,11 +37,12 @@ public class FSProcRemote implements FSProc {
 				&& Objects.nonNull(storageParam.getHostName())) {
 			storageParamLocal.set(storageParam);
 		} else {
-			throw new AvpServiceException(
-					"Impossible d'initialiser le module de stockage local car les paramètres de stockages ne correspondent pas");
+			throw new AvpExploitException(
+					"Impossible d'initialiser le module de stockage local car les paramètres de stockages ne correspondent pas",
+					null);
 		}
 
-		// If idStorage is not already assigned, 
+		// If idStorage is not already assigned,
 		// require remote Storage Module to create one
 		if (Objects.isNull(storageParam.getIdStorage())) {
 
@@ -51,7 +51,8 @@ public class FSProcRemote implements FSProc {
 
 			String result;
 			try {
-				result = (String) remoteCall.callServletWithJsonObject(param, getServerUrlFromStorageParam(storageParamLocal.get()));
+				result = (String) remoteCall.callServletWithJsonObject(param,
+						getServerUrlFromStorageParam(storageParamLocal.get()));
 			} catch (ClassNotFoundException | IOException e) {
 				throw new AvpExploitException("514", e, "Création d'un module de stockage", null, null, null);
 			}
@@ -68,7 +69,7 @@ public class FSProcRemote implements FSProc {
 
 	@Override
 	public boolean writeFile(String sha1Unique, String contentBase64) throws AvpExploitException {
-		
+
 		JSONObject param = new JSONObject();
 		param.put("command", Commande.ARCHIVE.toString());
 		param.put("idstorage", storageParamLocal.get().getIdStorage());
@@ -77,7 +78,8 @@ public class FSProcRemote implements FSProc {
 
 		String result;
 		try {
-			result = (String) remoteCall.callServletWithJsonObject(param, getServerUrlFromStorageParam(storageParamLocal.get()));
+			result = (String) remoteCall.callServletWithJsonObject(param,
+					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
 			throw new AvpExploitException("514", e, "Archivage par le module de stockage", null, null, null);
 		}
@@ -101,7 +103,7 @@ public class FSProcRemote implements FSProc {
 
 	@Override
 	public boolean deleteFile(String sha1Unique) throws AvpExploitException {
-		
+
 		JSONObject param = new JSONObject();
 		param.put("command", Commande.DELETE.toString());
 		param.put("idstorage", storageParamLocal.get().getIdStorage());
@@ -109,7 +111,8 @@ public class FSProcRemote implements FSProc {
 
 		String result;
 		try {
-			result = (String) remoteCall.callServletWithJsonObject(param, getServerUrlFromStorageParam(storageParamLocal.get()));
+			result = (String) remoteCall.callServletWithJsonObject(param,
+					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
 			throw new AvpExploitException("514", e, "Suppression d'une archive par le module de stockage", null, null,
 					null);
@@ -123,8 +126,8 @@ public class FSProcRemote implements FSProc {
 				throw new AvpExploitException("512", null, "Suppression d'une archive par le module de stockage", null,
 						null, null);
 			} else {
-				throw new AvpExploitException("515", null,
-						"Suppression d'une archive par le module de stockage", null, null, null);
+				throw new AvpExploitException("515", null, "Suppression d'une archive par le module de stockage", null,
+						null, null);
 			}
 		} else {
 			return true;
@@ -161,7 +164,8 @@ public class FSProcRemote implements FSProc {
 
 		String result;
 		try {
-			result = (String) remoteCall.callServletWithJsonObject(param, getServerUrlFromStorageParam(storageParamLocal.get()));
+			result = (String) remoteCall.callServletWithJsonObject(param,
+					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
 			throw new AvpExploitException("514", e, "Check des archives par le module de stockage", null, null, null);
 		}
@@ -213,7 +217,7 @@ public class FSProcRemote implements FSProc {
 
 	@Override
 	public byte[] getFile(String sha1Unique) throws AvpExploitException {
-	
+
 		JSONObject param = new JSONObject();
 		param.put("command", Commande.GET_DOC.toString());
 		param.put("idstorage", storageParamLocal.get().getIdStorage());
@@ -221,7 +225,8 @@ public class FSProcRemote implements FSProc {
 
 		String result;
 		try {
-			result = (String) remoteCall.callServletWithJsonObject(param, getServerUrlFromStorageParam(storageParamLocal.get()));
+			result = (String) remoteCall.callServletWithJsonObject(param,
+					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
 			throw new AvpExploitException("514", e, "Récupération d'une archive par le module de stockage", null, null,
 					null);
@@ -239,7 +244,7 @@ public class FSProcRemote implements FSProc {
 						"Récupération d'une archive par le module de stockage", null, null, null);
 			}
 		} else {
-			String contentBase64 = json.get("content").toString();			
+			String contentBase64 = json.get("content").toString();
 			return Base64.getDecoder().decode(contentBase64);
 		}
 	}

@@ -124,6 +124,7 @@ public class ArchivageApiService {
 
 		// No need to add OK for each method individually if all goes well
 		// Otherwise, return code will be overwritten
+		// All action need Rollback of DB will raise an AvpExploitException
 		resultat.put("codeRetour", ReturnCode.OK.toString());
 		resultat.put("message", "");
 
