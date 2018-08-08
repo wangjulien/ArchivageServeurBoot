@@ -11,33 +11,33 @@ import com.telino.avp.dao.ProfileDao;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.auxil.Journal;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.DbEntityProtocol.DocumentStatut;
 import com.telino.avp.service.journal.AbstractJournalService;
 import com.telino.avp.tools.FillPdfForm;
 
 public abstract class AbstractStorageService {
-	
+
 	@Autowired
 	protected ProfileDao profileDao;
-	
+
 	/**
-	 * Archivage d'un document, persister meta-donnee dans les DB et fichier dans les Units Storage
+	 * Archivage d'un document, persister meta-donnee dans les DB et fichier dans
+	 * les Units Storage
 	 * 
 	 * @param document
-	 * @return
 	 * @throws AvpExploitException
 	 */
-	public abstract boolean archive(final Document document) throws AvpExploitException;
+	public abstract void archive(final Document document) throws AvpExploitException;
 
 	/**
 	 * Supresssion definitve d'un document
 	 * 
 	 * @param document
-	 * @return
 	 * @throws AvpExploitException
 	 */
-	public abstract boolean delete(final Document document) throws AvpExploitException;
+	public abstract void delete(final Document document) throws AvpExploitException;
 
 	/**
 	 * Controle de l'integralite d'un document
@@ -47,7 +47,7 @@ public abstract class AbstractStorageService {
 	 * @return
 	 * @throws AvpExploitException
 	 */
-	public abstract boolean check(final UUID docId, final boolean toArchive) throws AvpExploitException;
+	public abstract void check(final UUID docId, final boolean toArchive) throws AvpExploitException;
 
 	/**
 	 * Controle de l'integralite d'une liste de document par les Units Storage
@@ -69,8 +69,7 @@ public abstract class AbstractStorageService {
 	 * @throws Exception
 	 */
 	public abstract Document get(final UUID docId) throws AvpExploitException;
-	
-	
+
 	/**
 	 * Archivage d'une attestation en tant que document
 	 * 
@@ -81,9 +80,9 @@ public abstract class AbstractStorageService {
 	 */
 	public Document archive(final String operation, final Document doc) throws AvpExploitException {
 		byte[] content = FillPdfForm.getAttestationFilled(operation, doc);
-		
+
 		Document attestation = new Document();
-		
+
 		attestation.setArchiveDate(ZonedDateTime.now());
 		attestation.setContent(content);
 		attestation.setDate(ZonedDateTime.now());
@@ -96,19 +95,18 @@ public abstract class AbstractStorageService {
 		int contentLength = content.length;
 		attestation.setContentLength(contentLength);
 		attestation.setStatut(DocumentStatut.ATTESTATION.getStatutCode());
-		attestation.setDepot(null);	// Depot ID 0
+		attestation.setDepot(null); // Depot ID 0
 		attestation.setProfile(doc.getProfile());
-		if (!archive(attestation)) {
-			try {
-				throw new Exception(
-						"Impossible d'archiver l'attestation de " + operation + " de l'archive " + doc.getDocId());
-			} catch (Exception e) {
-				throw new AvpExploitException("520", e, "Archivage des attestations de " + operation, null,
-						"" + doc.getDocId(), null);
-			}
-		} else {
-			return attestation;
+
+		// Archivage de l'attestation
+		try {
+			archive(attestation);
+		} catch (Exception e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_ATTESTATION_ERROR, e,
+					"Archivage des attestations de " + operation, doc.getDocId().toString(), null);
 		}
+
+		return attestation;
 	}
 
 	/**
@@ -130,18 +128,20 @@ public abstract class AbstractStorageService {
 		logDoc.setTitle("journal_" + now.toString() + ".xml");
 		logDoc.setContentType("application/xml");
 		int contentLength = content.length;
-		logDoc.setProfile(profileDao.findByParId(1)); 
+		logDoc.setProfile(profileDao.findByParId(1));
 		logDoc.setContentLength(contentLength);
 		logDoc.setStatut(DocumentStatut.LOG_DOC.getStatutCode());
 		logDoc.setDepot(null);
-		if (!archive(logDoc)) {
-			throw new AvpExploitException("520",
-					new Exception(
-							"Impossible d'archiver le journal " + journal.getClass() + " numéro " + journal.getLogId()),
-					"Archivage des journaux", null, null, "" + journal.getLogId());
-		} else {
-			return logDoc;
+
+		// Archive journal file XML
+		try {
+			archive(logDoc);
+		} catch (Exception e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_ATTESTATION_ERROR, e,
+					"Archivage du journal " + journal.getClass(), null, journal.getLogId().toString());
 		}
+
+		return logDoc;
 	}
 
 }

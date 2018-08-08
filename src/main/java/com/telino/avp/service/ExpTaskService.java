@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.LogArchiveDao;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.service.archivage.DocumentService;
 import com.telino.avp.service.journal.JournalArchiveService;
@@ -28,22 +29,21 @@ import com.telino.avp.service.storage.FsStorageService;
 public class ExpTaskService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ExpTaskService.class);
-	
+
 	@Autowired
 	private DocumentService documentService;
 
 	@Autowired
 	private JournalArchiveService journalArchiveService;
-	
+
 	@Autowired
-	private FsStorageService fsStorageService;	
-	
+	private FsStorageService fsStorageService;
+
 	@Autowired
 	private DocumentDao documentDao;
 
 	@Autowired
 	private LogArchiveDao logArchiveDao;
-
 
 	/**
 	 * Dispatcher de tâches, une contrôle de l'intégralité est lancé après
@@ -59,7 +59,8 @@ public class ExpTaskService {
 		if (Objects.isNull(input.get("docid"))) {
 			String msg = "Appel http ne contient pas docid " + input;
 			LOGGER.error(msg);
-			throw new AvpExploitException("1", new Throwable(msg));
+			throw new AvpExploitException(AvpExploitExceptionCode.EXP_TASK_INPUT_ERROR, new Throwable(msg),
+					"Dispatcher exploitation tache");
 		} else
 			docId = UUID.fromString(input.get("docid").toString());
 
@@ -100,7 +101,8 @@ public class ExpTaskService {
 		default:
 			String msg = "Type de tâche d'exploitation erroné : " + expTaskCommand;
 			LOGGER.error(msg);
-			throw new AvpExploitException("1", new Throwable(msg));
+			throw new AvpExploitException(AvpExploitExceptionCode.EXP_TASK_INPUT_ERROR, new Throwable(msg),
+					"Dispatcher exploitation tache");
 		}
 
 		LOGGER.info("Rappel Controle de l'integralite : " + input);

@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.auxil.Journal;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.service.storage.AbstractStorageService;
 import com.telino.avp.utils.Sha;
 
@@ -60,31 +61,33 @@ public abstract class AbstractJournalService {
 
 		traitementPreScellement(listArchive);
 
-		// For the sack of TIMESTAMP order, We need to make Log of sealling after the Logs of "attestation d'archive"
+		// For the sack of TIMESTAMP order, We need to make Log of sealling after the
+		// Logs of "attestation d'archive"
 		try {
-			Thread.sleep(1); // 1 ms 
+			Thread.sleep(1); // 1 ms
 		} catch (InterruptedException e1) {
 		}
-		
+
 		// Persist un nouveau Log
 		Journal journal = bookLogId();
 		// Recupere contenu a sceller depuis Database Master (isMirror = false)
 		journal.setContenu(recupereContenu(journal.getLogId(), false));
 
 		calculeDigest(journal);
-		
+
 		// Required a Timestamp from Timestamp Organism
 		try {
 			tamponHorodatageService.demanderTamponHorodatage(journal);
 		} catch (Exception e) {
-			throw new AvpExploitException("701", e, "Scellement du journal", null, null, "" + journal.getLogId());
+			throw new AvpExploitException(AvpExploitExceptionCode.SEAL_LOG_GET_TAMPON_ERROR, e, "Scellement du journal",
+					null, journal.getLogId().toString());
 		}
-		
+
 		// TODO : ??? verifyTamponHorodatage(); is needed?
-		
+
 		// Archivage d'un journal en tant que document
 		Document journalXml = storageService.archive(this, journal);
-		
+
 		// Persiste le log
 		logScellement(journalXml, journal);
 
@@ -99,15 +102,15 @@ public abstract class AbstractJournalService {
 	 * @throws AvpExploitException
 	 */
 	public void verifyJournal(final Journal journal, final boolean isMirror) throws AvpExploitException {
-		
+
 		// Reload the TimestampToken object from the Bytes loaded with journal
 		try {
 			tamponHorodatageService.initTamponHorodatage(journal);
 		} catch (CMSException | TSPException | IOException e) {
-			throw new AvpExploitException("518", null, "Erreur lors de valorisation de TamponHorodatage objet", null,
-					null, journal.getLogId().toString());
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_TAMPON_ERROR, e,
+					"Valorisation de TamponHorodatage objet", null, journal.getLogId().toString());
 		}
-	
+
 		// reload contenu
 		journal.setContenu(recupereContenu(journal.getLogId(), isMirror));
 
@@ -118,31 +121,30 @@ public abstract class AbstractJournalService {
 
 			// Recupere le contenu depuis l'autre DataBase
 			if (!recupereContenu(journal.getLogId(), !isMirror).equals(journal.getContenu())) {
-				throw new AvpExploitException("703", null, "Vérification du contenu du journal", null, null,
-						"" + journal.getLogId());
+				throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_MIRROR_DB_ERROR, null,
+						"Vérification du contenu du journal", null, journal.getLogId().toString());
 			}
 
 			try {
 				// Verification de TamponHorodatage
 				tamponHorodatageService.verifyTamponHorodatage(journal);
-
 			} catch (OperatorCreationException | TSPException | CMSException e) {
-				throw new AvpExploitException("519", e, "Vérification du tampon d'horodatage du journal", null, null,
-						"" + journal.getLogId());
+				throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_TAMPON_ERROR, e,
+						"Vérification du tampon d'horodatage du journal", null, journal.getLogId().toString());
 			}
 		} else {
-			throw new AvpExploitException("505", null,
-					"Confrontation du contenu du journal et du hash du tampon d'horodatage", null, null,
-					"" + journal.getLogId());
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_ENTIRETY_ERROR, null,
+					"Confrontation du contenu du journal et du hash du tampon d'horodatage", null,
+					journal.getLogId().toString());
 		}
 
 		// !!! TimeStampToken vient de Horodatage ne contient pas de Time Zone
 		//
 		if (!journal.getHorodatage().isEqual(TamponHorodatageService
 				.convertToSystemZonedDateTime(journal.getTimestampToken().getTimeStampInfo().getGenTime()))) {
-			throw new AvpExploitException("504", null,
-					"Confrontation de la date de scellement et de la date du tampon d'horodatage", null, null,
-					"" + journal.getLogId());
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_TAMPON_MISMATCH_ERROR, null,
+					"Confrontation de la date de scellement et de la date du tampon d'horodatage", null,
+					journal.getLogId().toString());
 		}
 	}
 
@@ -176,13 +178,13 @@ public abstract class AbstractJournalService {
 	protected abstract void traitementPostScellement(final List<Document> listArchive, final Journal journal)
 			throws AvpExploitException;
 
-	
 	/**
 	 * TODO : Effectue le traitement suite à une erreur de scellement du journal
-	 * @throws AVPExploitException 
+	 * 
+	 * @throws AVPExploitException
 	 */
 	protected abstract void traitementPostErreur(final List<Document> attestationList) throws AvpExploitException;
-	
+
 	/**
 	 * Récupère le contenu du journal à sceller
 	 * 
@@ -215,8 +217,8 @@ public abstract class AbstractJournalService {
 		try {
 			journal.setHash(Sha.encode(journal.getContenu(), "utf-8"));
 		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			// TODO : AVPExploitException a gerer
-			throw new AvpExploitException("1", e);
+			new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_CAL_HASH_ERROR, null, "Calcul de hash du journal",
+					null, journal.getLogId().toString());
 		}
 	}
 }

@@ -180,7 +180,7 @@ public class ArchivageApiController {
 			} else {
 				if (Commande.STORE.toString().equals((String) header.get("command")))
 					trame.put("iddepot", depot.getIdDepot().toString());
-				
+
 				// TODO : ??? What's this code for?
 				Map<String, Object> printObject = new HashMap<>();
 				if (trame.containsKey("content")) {
@@ -225,18 +225,14 @@ public class ArchivageApiController {
 		} catch (AvpExploitException e) {
 			LOGGER.error("Erreur servlet d'archivage " + e.getMessage());
 
-			// TODO : gestion de transaction
-			// rollBack(conn, connMirror, false);
-
 			Map<String, Object> inputToLog1 = new HashMap<>();
 			inputToLog1.put("origin", "ADELIS");
 			inputToLog1.put("operateur", "ADELIS");
 			inputToLog1.put("version", "1");
-			inputToLog1.put("processus", Objects.nonNull(e.getProcessus()) ? e.getProcessus()
-					: Commande.getEnum((String) header.get("command")).getProcess());
+			inputToLog1.put("processus", Commande.getEnum((String) header.get("command")).getProcess());
 			inputToLog1.put("action", e.getAction());
 			inputToLog1.put("logtype", "E");
-			inputToLog1.put("detail", AvpExploitException.getTableLibelleErreur().get(e.getMessage())[0]);
+			inputToLog1.put("detail", e.getCodeErreur().getInternalDetail());
 			inputToLog1.put("archiveid", e.getArchiveId());
 			inputToLog1.put("journalid", e.getJournalId());
 			inputToLog1.put("methode", e.getMethodName());
@@ -250,7 +246,7 @@ public class ArchivageApiController {
 
 			Map<String, Object> mapResultat = new HashMap<>();
 			mapResultat.put("codeRetour", ReturnCode.KO.toString());
-			mapResultat.put("message", AvpExploitException.getTableLibelleErreur().get(e.getMessage())[1]);
+			mapResultat.put("message", e.getCodeErreur().getExternalDetail());
 
 			// TaskId pour TaskExploitation
 			if (!Objects.isNull(trame.get("taskid")))

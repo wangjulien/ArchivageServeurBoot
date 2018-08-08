@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import javax.persistence.PersistenceException;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -139,11 +137,11 @@ public class ArchivageApiService {
 			break;
 
 		case CHECK_LOG_CHECK:
-			journalArchiveService.checklogcheck(UUID.fromString((String) input.get("logid")));
+			journalArchiveService.checkLogArchive(UUID.fromString((String) input.get("logid")));
 			break;
 
 		case CHECK_LOG_EVENT:
-			journalEventService.checklogevent(UUID.fromString((String) input.get("logid")));
+			journalEventService.checkLogEvent(UUID.fromString((String) input.get("logid")));
 			break;
 
 		case CONTROL:
@@ -155,14 +153,11 @@ public class ArchivageApiService {
 			break;
 
 		case COMMUNICATION_VALIDATED:
-			try {
-				// First create the communication
-				Communication communication = comAndRestService.communication(input);
-				// add than validate it
-				comAndRestService.validationCommunication(communication);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("602", e, "Validation de communication d'archives", null, null, null);
-			}
+
+			// First create the communication
+			Communication communication = comAndRestService.communication(input);
+			// add than validate it
+			comAndRestService.validationCommunication(communication);
 			break;
 
 		case CREATE_LOG_CHECK:
@@ -174,12 +169,7 @@ public class ArchivageApiService {
 			break;
 
 		case DELAY:
-			try {
-				documentService.delay(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("617", e, "Modification de la date d'expiration du document", null, null,
-						null);
-			}
+			documentService.delay(input, resultat);
 			break;
 
 		case DELETE:
@@ -187,12 +177,7 @@ public class ArchivageApiService {
 			break;
 
 		case DELETE_DRAFT:
-			try {
-				draftService.deleteDraft(input);
-
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("616", e, "Suppression d'un draft", null, null, null);
-			}
+			draftService.deleteDraft(input);
 			break;
 
 		case EXP_TASK_CHECK_RESTORE_MASTER_HASH:
@@ -211,91 +196,46 @@ public class ArchivageApiService {
 			break;
 
 		case GET_ATTESTATION:
-			try {
-				// Get the Attestation file for a log
-				journalArchiveService.getAttestation(UUID.fromString((String) input.get("logid")), resultat);
-			} catch (Exception e) {
-				throw new AvpExploitException("612", e, "Récupération d'une attestation", null, null,
-						input.get("logid").toString());
-			}
+			// Get the Attestation file for a log
+			journalArchiveService.getAttestation(UUID.fromString((String) input.get("logid")), resultat);
 			break;
 
 		case GET_COMMUNICATION:
-			try {
-				comAndRestService.getCommunication(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("601", e, "Communication d'archives", null, null, null);
-			}
+			comAndRestService.getCommunication(input, resultat);
 			break;
 
 		case GET_DRAFT_INFO:
-			try {
-				draftService.getDraftInfo(UUID.fromString((String) input.get("docid")), resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("614", e, "Récupération des informations d'un draft", null, null, null);
-			}
+			draftService.getDraftInfo(UUID.fromString((String) input.get("docid")), resultat);
 			break;
 
 		case GET_DOC:
-			try {
-				documentService.get(input, resultat);
-			} catch (Exception e) {
-				throw new AvpExploitException("613", e, "Récupération des données d'une archive", null,
-						(String) input.get("docid"), null);
-			}
+			documentService.get(input, resultat);
 			break;
 
 		case GET_INFO:
-			try {
-				documentService.getInfo(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("618", e, "Récupération des informations d'une archive", null, null,
-						null);
-			}
+			documentService.getInfo(input, resultat);
 			break;
 
 		case GET_LOG_FILE:
-			try {
-				// Get attestation file from LogEvent
-				journalEventService.getLogFile(UUID.fromString((String) input.get("logid")), resultat);
-			} catch (Exception e) {
-				throw new AvpExploitException("612", e, "Récupération d'une attestation", null, null,
-						(String) input.get("logid"));
-			}
+			// Get attestation file from LogEvent
+			journalEventService.getLogFile(UUID.fromString((String) input.get("logid")), resultat);
 			break;
 
 		case GET_RESTITUTION:
-			try {
-				comAndRestService.getRestitution(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("601", e, "Restitution d'archives", null, null, null);
-			}
+			comAndRestService.getRestitution(input, resultat);
 			break;
 
 		case GET_RIGHTS:
-			try {
-				userProfileRightService.getRights((String) input.get("user"), resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("619", e, "Récupération des droits de l'utilisateur", null, null, null);
-			}
+			userProfileRightService.getRights((String) input.get("user"), resultat);
 			break;
 
 		case GET_USER_PROFILES:
-			try {
-				userProfileRightService.getUserReadProfiles((String) input.get("user"), resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("619", e, "Récupération des profils d'archivages de l'utilisateur", null,
-						null, null);
-			}
+			userProfileRightService.getUserReadProfiles((String) input.get("user"), resultat);
 			break;
 
 		case LIST:
-			try {
-				// recupere une liste de keywords with document meta donnee, limit a 2?
-				documentService.getList(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("619", e, "Récupération de la liste des archives", null, null, null);
-			}
+			// recupere une liste de keywords with document meta donnee, limit a 2?
+			documentService.getList(input, resultat);
 			break;
 
 		case LOG_EVENT:
@@ -328,53 +268,32 @@ public class ArchivageApiService {
 			break;
 
 		case READ_DRAFT:
-			try {
-				draftService.readDraft(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("614", e, "Récupération de la visualisation d'un draft", null, null,
-						null);
-			}
+			draftService.readDraft(input, resultat);
 			break;
 
 		case REFUS_COMMUNICATION:
-			try {
-				comAndRestService.refusCommunication(UUID.fromString((String) input.get("communicationid")));
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("602", e, "Validation d'une communication d'archives", null, null, null);
-			}
+			comAndRestService.refusCommunication(UUID.fromString((String) input.get("communicationid")));
 			break;
 
 		case REFUS_DRAFT:
-			try {
-				draftService.refusDraft(input);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("602", e, "Refuse draft", null, null, null);
-			}
+			draftService.refusDraft(input);
 			break;
 
 		case RESTITUTION:
-			try {
-				comAndRestService.restitute(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("601", e, "Restitution d'archives", null, null, null);
-			}
+			comAndRestService.restitute(input, resultat);
 			break;
 
 		case STORE:
 			if (Objects.isNull(input.get("serviceverseur"))) {
 				resultat.put("codeRetour", "9");
 				resultat.put("message", "Le service verseur est obligatoire");
-				return resultat;
-			}
-			documentService.store(input, resultat);
+
+			} else
+				documentService.store(input, resultat);
 			break;
 
 		case STORE_DRAFT:
-			try {
-				draftService.draftStore(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("615", e, "Archivage d'un draft", null, null, null);
-			}
+			draftService.draftStore(input, resultat);
 			break;
 
 		case STORE_PASSWORD:
@@ -382,42 +301,20 @@ public class ArchivageApiService {
 			break;
 
 		case UPDATE_DRAFT:
-			try {
-				draftService.updateDraft(input);
-			} catch (Exception e) {
-				resultat.put("codeRetour", "99");
-				resultat.put("message", e.getMessage());
-			}
+			draftService.updateDraft(input);
 			break;
 
 		case VALIDE_DRAFT:
-			try {
-				draftService.valideDraft(input);
-
-			} catch (Exception e) {
-				resultat.put("codeRetour", "99");
-				resultat.put("message", e.getMessage());
-			}
-
+			draftService.valideDraft(input);
 			break;
 
 		case VALIDATION_COMMUNICATION:
-			try {
-				Communication communication = comAndRestService.findByComId(UUID.fromString(""));
-				comAndRestService.validationCommunication(communication);
-
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("602", e, "Validation d'une communication d'archives", null, null, null);
-			}
-
+			Communication comToBeValided = comAndRestService.findByComId(UUID.fromString(""));
+			comAndRestService.validationCommunication(comToBeValided);
 			break;
 
 		case VALIDATION_RESTITUTION:
-			try {
-				comAndRestService.validationRestitution(input, resultat);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("601", e, "Validation d'une restitution d'archives", null, null, null);
-			}
+			comAndRestService.validationRestitution(input, resultat);
 			break;
 
 		default:
@@ -426,7 +323,6 @@ public class ArchivageApiService {
 			break;
 
 		}
-
 		return resultat;
 	}
 

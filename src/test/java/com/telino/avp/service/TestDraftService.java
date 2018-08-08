@@ -55,7 +55,7 @@ public class TestDraftService {
 	}
 
 	@Test
-	public void refus_draft() {
+	public void refus_draft() throws AvpExploitException {
 		input.clear();
 
 		draftService.refusDraft(input);
@@ -72,7 +72,7 @@ public class TestDraftService {
 	}
 
 	@Test
-	public void update_draft() {
+	public void update_draft() throws AvpExploitException {
 		input.clear();
 		
 		input.put("docid", UUID.randomUUID().toString());
@@ -89,7 +89,7 @@ public class TestDraftService {
 	}
 	
 	@Test
-	public void valide_draft() {
+	public void valide_draft() throws AvpExploitException {
 		input.clear();
 
 		draftService.valideDraft(input);
@@ -106,7 +106,7 @@ public class TestDraftService {
 	}
 	
 	@Test
-	public void get_draft_info() {
+	public void get_draft_info() throws AvpExploitException {
 		Draft draft = new Draft();
 		draft.setDocId(UUID.randomUUID());
 		
@@ -117,7 +117,7 @@ public class TestDraftService {
 	}
 	
 	@Test
-	public void read_draft() {
+	public void read_draft() throws AvpExploitException {
 		Draft draft = new Draft();
 		draft.setDocId(UUID.randomUUID());
 		draft.setTitle("TestTitle");

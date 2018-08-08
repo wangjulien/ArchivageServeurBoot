@@ -23,8 +23,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.persistence.PersistenceException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +46,9 @@ import com.telino.avp.entity.context.ParRight;
 import com.telino.avp.entity.context.Profile;
 import com.telino.avp.entity.context.User;
 import com.telino.avp.entity.param.Param;
+import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
@@ -135,12 +135,7 @@ public class DocumentService {
 		UUID docId = UUID.fromString((String) input.get("docid"));
 
 		// Controle de l'integralite par module de storage
-		boolean checked = storageService.check(docId, false);
-
-		if (!checked) {
-			throw new AvpExploitException("503", null, "Contrôle d'intégrité d'une archive", null,
-					input.get("docid").toString(), null);
-		}
+		storageService.check(docId, false);
 
 		try {
 			// Get the sealing log for the document
@@ -148,34 +143,25 @@ public class DocumentService {
 			// check the entirety of the sealing log
 			journalArchiveService.verifyJournal(logArchive, false);
 
-			// TODO : improve the exception management
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("506", e, "Contrôle d'intégrité d'une archive", null, docId.toString(), null);
-		} catch (Exception e) {
-			if (e.getMessage().contains("horodatage")) {
-				throw new AvpExploitException("504", null, "Vérification de l'intégrité d'une archive", null,
-						(String) input.get("docid"), null);
-			} else {
-				throw new AvpExploitException("505", null, "Vérification de l'intégrité d'une archive", null,
-						(String) input.get("docid"), null);
-			}
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Contrôle d'intégrité d'une archive", docId.toString(), null);
 		}
 
 		// Log the entirety controle in LOG_ARCHIVE
 		try {
 			Document document = documentDao.get(docId, false);
 
-			Map<String, Object> inputToLog = new HashMap<String, Object>();
-			inputToLog.put("operation", "Contrôle d'intégrité de l'archive" + input.get("docid").toString());
-			inputToLog.put("docid", input.get("docid"));
-			inputToLog.put("userid", input.get("user"));
-			inputToLog.put("mailid", input.get("mailid"));
-			inputToLog.put("docsname", input.get("docsname"));
-			inputToLog.put("hash",
-					Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
-			inputToLog.put("logtype", LogArchiveType.C.toString());
+			LogArchive logArchive = new LogArchive();
+			logArchive.setOperation("Contrôle d'intégrité de l'archive" + input.get("docid").toString());
+			logArchive.setDocument(document);
+			logArchive.setUser(userDao.findByUserId((String) input.get("user")));
+			logArchive.setMailId((String) input.get("mailid"));
+			logArchive.setDocsName(document.getTitle());
+			logArchive.setHash(Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
+			logArchive.setLogType(LogArchiveType.C.toString());
 
-			journalArchiveService.log(inputToLog);
+			journalArchiveService.setHorodatageAndSave(logArchive);
 		} catch (AvpExploitException e) {
 			LOGGER.error("Impossible de logué le controle d'intégrité dans le cycle de vie des archives");
 			throw e;
@@ -191,7 +177,7 @@ public class DocumentService {
 	 */
 	public void checkfiles(final Map<String, Object> input, final Map<String, Object> resultat)
 			throws AvpExploitException {
-		// Test
+
 		try {
 			Objects.requireNonNull(input.get("docids"), "Input 'docids' is null!");
 
@@ -203,17 +189,21 @@ public class DocumentService {
 			Map<UUID, FileReturnError> badDocsInUnit2 = new HashMap<>();
 			if (!storageService.checkFiles(docIds, badDocsInUnit1, badDocsInUnit2)) {
 
+				// Check all file by UnitStorage is doned, we still need continue to check the
+				// LogArchive
+				// So we just log all the Errors and set Return Code = KO
 				entiretyCheckResultLogger.logErrorResult(input, badDocsInUnit1, badDocsInUnit2);
 				resultat.put("codeRetour", ReturnCode.KO.toString());
 				resultat.put("message", "Controle de l'integralite de ces documents n'est pas passe : \n"
 						+ badDocsInUnit1 + "\n" + badDocsInUnit2);
 			}
 
-			// Controle le sellement de journaux des archives
-			// Verification de sellement de log_archivage
+			// Remove all Doc that the check entirety is not passed
 			docIds.removeAll(badDocsInUnit1.keySet());
 			docIds.removeAll(badDocsInUnit2.keySet());
 
+			// Controle le sellement de journaux des archives
+			// Verification de sellement de log_archivage
 			if (!checkScellementLogArchive(docIds, input)) {
 				resultat.put("codeRetour", ReturnCode.KO.toString());
 				String message = (String) resultat.get("message");
@@ -222,7 +212,8 @@ public class DocumentService {
 			}
 
 		} catch (NullPointerException | IOException e) {
-			throw new AvpExploitException("507", e, "Entrée 'input' ne peut pas être parsé en JSON", null, null, null);
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_INPUT_ERROR, e,
+					"Documents IDs ne sont pas dans Input info ");
 		}
 	}
 
@@ -232,7 +223,6 @@ public class DocumentService {
 
 		// Verification de sellement de log_archivage
 		// Recupere logid de log_archive
-
 		Set<LogArchive> logArchives = journalArchiveService.getSellementLogArchiveForDocs(docIds);
 
 		for (LogArchive log : logArchives) {
@@ -242,7 +232,7 @@ public class DocumentService {
 
 			} catch (AvpExploitException e) {
 				allGoesWell = false;
-
+				// Log Exception and continue for another LogArchive
 				LogEvent logEvent = new LogEvent();
 				logEvent.setOrigin((String) input.get("origin"));
 				logEvent.setProcessus((String) input.get("processus"));
@@ -252,18 +242,18 @@ public class DocumentService {
 				logEvent.setLogType(LogEventType.C.toString());
 				logEvent.setLogArchive(log);
 				logEvent.setMethode(e.getMethodName());
-				logEvent.setDetail(AvpExploitException.getTableLibelleErreur().get(e.getMessage())[0]);
+				logEvent.setDetail(e.getCodeErreur().getInternalDetail());
 				logEvent.setTrace(e.getMessage() + "." + Arrays.toString(e.getStackTrace()));
 
 				try {
 					// Log the Exception in LOG_EVENT
 					journalEventService.setHorodatageAndSave(logEvent);
 				} catch (AvpExploitException e1) {
-					LOGGER.error("problème dans logevent");
+					LOGGER.error("Problème d'enregistrement dans logevent");
 				}
 			} catch (Exception e) {
 				allGoesWell = false;
-
+				// Log Exception and continue for another LogArchive
 				LogEvent logEvent = new LogEvent();
 				logEvent.setOrigin((String) input.get("origin"));
 				logEvent.setProcessus((String) input.get("processus"));
@@ -277,7 +267,7 @@ public class DocumentService {
 				try {
 					journalEventService.setHorodatageAndSave(logEvent);
 				} catch (AvpExploitException e1) {
-					LOGGER.error("problème dans logevent");
+					LOGGER.error("Problème d'enregistrement dans logevent");
 				}
 			}
 		}
@@ -298,24 +288,23 @@ public class DocumentService {
 		final UUID docId = UUID.fromString((String) input.get("docid"));
 		final String userId = (String) input.get("user");
 
-		final Document document = documentDao.get(docId, false);
-		Objects.requireNonNull(document.getProfile(), "A document should have a profile!");
+		// Get the archieve and its profile
+		final Document document;
+		try {
+			document = documentDao.get(docId, false);
+			Objects.requireNonNull(document.getProfile(), "A document should have a profile!");
+		} catch (AvpDaoException | NullPointerException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.DOC_GET_DAO_ERROR, e,
+					"Recuperer meta-donnee du document", docId.toString(), null);
+		}
 
+		// Check if user has the right to delay an archieve
 		if (!userProfileRightService.canDoThePredict(document.getProfile().getParId(), userId,
 				ParRight::isParCanDelay)) {
 			resultat.put("codeRetour", "1");
 			resultat.put("message", "Opération non autorisée");
 			return;
 		}
-
-		// ResultSet rs = st.executeQuery(
-		// "select mindestructiondelay, a.archive_end, a.archive_date,
-		// b.par_conservation "
-		// + "from document a "
-		// + "join profils b on a.par_id = b.par_id "
-		// + "left join destructioncriterias c on c.destructioncriteriaid =
-		// b.destructioncriteriaid "
-		// + " where docid = " + docid);
 
 		int minDelay = 0;
 		// If a destruction criteria is associated with the profile
@@ -336,21 +325,26 @@ public class DocumentService {
 			return;
 		}
 
-		// Update DateArchiveEnd
-		document.setArchiveEnd(sDate);
-		documentDao.saveMetaDonneesDocument(document);
+		try {
+			// Update DateArchiveEnd
+			document.setArchiveEnd(sDate);
+			documentDao.saveMetaDonneesDocument(document);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.DOC_UPDATE_DAO_ERROR, e,
+					"Mettre a jour date fin d'archivage", docId.toString(), null);
+		}
 
 		// Create a LogArchive for the extension of archive end
-		Map<String, Object> inputToLog = new HashMap<>();
-		inputToLog.put("operation", "modification délai d'archivage au " + sDate.toString());
-		inputToLog.put("docid", docId.toString());
-		inputToLog.put("userid", userId);
-		inputToLog.put("mailid", (String) input.get("mailid"));
-		inputToLog.put("docsname", (String) input.get("docsname"));
-		inputToLog.put("hash", Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
-		inputToLog.put("logtype", LogArchiveType.A.toString());
+		LogArchive logArchive = new LogArchive();
+		logArchive.setOperation("modification délai d'archivage au " + sDate.toString());
+		logArchive.setDocument(document);
+		logArchive.setUser(userDao.findByUserId(userId));
+		logArchive.setMailId((String) input.get("mailid"));
+		logArchive.setDocsName(document.getTitle());
+		logArchive.setHash(Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
+		logArchive.setLogType(LogArchiveType.A.toString());
 
-		journalArchiveService.log(inputToLog);
+		journalArchiveService.setHorodatageAndSave(logArchive);
 	}
 
 	/**
@@ -358,10 +352,8 @@ public class DocumentService {
 	 * 
 	 * @param input
 	 * @param resultat
-	 * @throws Exception
 	 */
-	public void delete(final Map<String, Object> input, final Map<String, Object> resultat, final boolean isBgTask)
-			throws AvpExploitException {
+	public void delete(final Map<String, Object> input, final Map<String, Object> resultat, final boolean isBgTask) {
 		Boolean deleteAll = true;
 		String message = "";
 		if (Objects.nonNull(input.get("idlist")) && input.get("idlist").toString().length() > 0) {
@@ -378,6 +370,8 @@ public class DocumentService {
 				}
 			}
 			if (!deleteAll) {
+				// Here it's not needed to raise an AvpException to roll back all delete
+				// documents
 				resultat.put("codeRetour", ReturnCode.KO.toString());
 				resultat.put("message", message);
 			}
@@ -385,6 +379,8 @@ public class DocumentService {
 			Document document = documentDao.get(UUID.fromString(input.get("docid").toString()), false);
 			Map<String, String> resultDelete = deleteDocumentUnitaire(input, document, isBgTask);
 
+			// Here it's not needed to raise an AvpException to roll back all delete
+			// documents
 			resultat.put("codeRetour", resultDelete.get("codeRetour"));
 			resultat.put("message", resultDelete.get("message"));
 		}
@@ -400,7 +396,7 @@ public class DocumentService {
 	 * @throws Exception
 	 */
 	private Map<String, String> deleteDocumentUnitaire(final Map<String, Object> input, final Document document,
-			final boolean isBgTask) throws AvpExploitException {
+			final boolean isBgTask) {
 
 		// TODO : !!! valorization noGED flag for delete function
 		final boolean noGED = Objects.isNull(document.getElasticid());
@@ -421,16 +417,10 @@ public class DocumentService {
 		Map<String, Object> resultGED = null;
 
 		if (!noGED && SwitchDataSourceService.CONTEXT_APP_PARAM.get().isUpdateged()) {
-			try {
-				resultGED = getGEDContent(input);
-			} catch (PersistenceException e) {
-				throw new AvpExploitException("611", e, "Récupérer les informations de l'archive présentes dans la GED",
-						null, document.getDocId().toString(), null);
-			}
+			resultGED = getGEDContent(input);
 
 			if (resultGED.get("archived") == null || !resultGED.get("archived").toString().equals("true")) {
 				// TODO : here the getGEDContent error information is not raised.
-
 				shouldUpdateGed = false;
 			} else {
 				shouldUpdateGed = true;
@@ -438,7 +428,9 @@ public class DocumentService {
 		}
 
 		// Launch delete action by Storage Service
-		if (storageService.delete(document)) {
+		try {
+			storageService.delete(document);
+
 			if (shouldUpdateGed) {
 				if (!noGED) {
 					HashMap<String, Object> GEDInfo = new HashMap<String, Object>();
@@ -447,15 +439,10 @@ public class DocumentService {
 					GEDInfo.put("domainowner", resultGED.get("domainowner"));
 					GEDInfo.put("externallink", " ");
 					GEDInfo.put("elasticid", input.get("elasticid"));
-					if (input.get("elasticid") != null)
-						try {
-							// TODO : updateGED return information is not used
-							updateGED(GEDInfo, Commande.DELETE);
-						} catch (Exception e) {
-							throw new AvpExploitException("611", e,
-									"Mettre à jour la GED pour la suppression de l'archive", null,
-									document.getDocId().toString(), null);
-						}
+					if (input.get("elasticid") != null) {
+						// TODO : updateGED return information is not used
+						updateGED(GEDInfo, Commande.DELETE);
+					}
 				}
 			}
 
@@ -469,7 +456,7 @@ public class DocumentService {
 			// Creation of a attestation de suppression
 			Document attestation = storageService.archive(titre, document);
 			attestation = storageService.get(attestation.getDocId());
-			
+
 			// Log in LogArchive
 			LogArchive logArchive = new LogArchive();
 			logArchive.setOperation(operation);
@@ -479,17 +466,17 @@ public class DocumentService {
 			logArchive.setDocsName(document.getTitle());
 			logArchive.setAttestation(attestation);
 			logArchive.setHash(Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
-			logArchive.setLogType(LogArchiveType.A.toString());		
+			logArchive.setLogType(LogArchiveType.A.toString());
 			journalArchiveService.setHorodatageAndSave(logArchive);
-			
+
 			//
 			// Suppression de metadonnee
 			//
 			documentDao.deleteMetaDonneesDocument(document);
-			
+
 			resultDelete.put("codeRetour", ReturnCode.OK.toString());
 			resultDelete.put("message", "");
-		} else {
+		} catch (Exception e) {
 			resultDelete.put("codeRetour", ReturnCode.KO.toString());
 			resultDelete.put("message", "Impossible de détruire cette archive. Veuillez reessayer ultérieurement.");
 		}
@@ -649,12 +636,19 @@ public class DocumentService {
 	 * @throws Exception
 	 */
 	public void get(final Map<String, Object> input, final Map<String, Object> resultat) throws AvpExploitException {
+		final UUID docId = UUID.fromString((String) input.get("docid"));
+		final String userId = input.get("user").toString();
+
+		Document document = null;
+		try {
+			document = documentDao.get(docId, false);
+			Objects.requireNonNull(document.getProfile(), "A document should have a profile!");
+		} catch (AvpDaoException | NullPointerException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.DOC_GET_DAO_ERROR, e, "Recuperer une archive",
+					docId.toString(), null);
+		}
 
 		// If the user can READ a doc
-		Document document = documentDao.get(UUID.fromString(input.get("docid").toString()), false);
-		Objects.requireNonNull(document.getProfile(), "A document should have a profile!");
-
-		final String userId = input.get("user").toString();
 
 		if (!userProfileRightService.canDoThePredict(document.getProfile().getParId(), userId,
 				ParRight::isParCanRead)) {
@@ -697,18 +691,17 @@ public class DocumentService {
 		LOGGER.debug("resultat : " + resultat.toString());
 
 		if (SwitchDataSourceService.CONTEXT_APP_PARAM.get().isLogread()) {
-			LOGGER.info("logging... - nfz42013");
 
-			Map<String, Object> inputToLog = new HashMap<>();
-			inputToLog.put("operation", "Ouverture de l'archive " + input.get("docid").toString());
-			inputToLog.put("docid", (String) input.get("docid"));
-			inputToLog.put("userid", userId);
-			inputToLog.put("mailid", (String) input.get("mailid"));
-			inputToLog.put("docsname", document.getTitle());
-			inputToLog.put("hash",
-					Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
-			inputToLog.put("logtype", LogArchiveType.L.toString());
-			journalArchiveService.log(inputToLog);
+			LogArchive logArchive = new LogArchive();
+			logArchive.setOperation("Ouverture de l'archive " + docId.toString());
+			logArchive.setDocument(document);
+			logArchive.setUser(userDao.findByUserId(userId));
+			logArchive.setMailId((String) input.get("mailid"));
+			logArchive.setDocsName(document.getTitle());
+			logArchive.setHash(Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
+			logArchive.setLogType(LogArchiveType.L.toString());
+
+			journalArchiveService.setHorodatageAndSave(logArchive);
 		}
 	}
 
@@ -719,46 +712,52 @@ public class DocumentService {
 	 * @param resultat
 	 * @throws AvpExploitException
 	 */
-	public void getInfo(final Map<String, Object> input, final Map<String, Object> resultat) {
-		// isMirror = false, get info from master DB
-		Document doc = documentDao.get(UUID.fromString(input.get("docid").toString()), false);
+	public void getInfo(final Map<String, Object> input, final Map<String, Object> resultat)
+			throws AvpExploitException {
 
-		resultat.put("docid", doc.getDocId().toString());
-		resultat.put("doctype", doc.getDoctype());
-		resultat.put("domnnom", doc.getDomnNom());
-		resultat.put("lot", doc.getLot());
-		resultat.put("iddepot", Objects.isNull(doc.getDepot()) ? "" : doc.getDepot().getIdDepot().toString());
-		resultat.put("conteneur", doc.getConteneur());
-		resultat.put("categorie", doc.getCategorie());
-		resultat.put("title", doc.getTitle());
-		resultat.put("description", doc.getDescription());
-		resultat.put("date", Date.from(doc.getDate().toInstant())); // Convert to Date for the sack of GWT Front
-		resultat.put("archiver_id", doc.getArchiverId());
-		resultat.put("content_type", doc.getContentType());
-		resultat.put("content_length", Objects.isNull(doc.getContentLength()) ? "" : doc.getContentLength().intValue());
-		resultat.put("archive_date", Date.from(doc.getArchiveDate().toInstant())); // Convert to Date for the sack of
-																					// GWT Front
-		resultat.put("archive_end", Date.from(doc.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT
-																					// Front
-		resultat.put("application", doc.getApplication());
-		resultat.put("keywords",
-				Objects.isNull(doc.getKeywords()) ? "" : doc.getKeywords().replaceAll("<", "").replaceAll(">", ""));
-		resultat.put("author", doc.getAuthor());
-		resultat.put("archiver_mail", doc.getArchiverMail());
-		resultat.put("mailowner", doc.getMailowner());
-		resultat.put("domaineowner", doc.getDomaineowner());
-		resultat.put("par_id", Objects.isNull(doc.getProfile()) ? 0 : doc.getProfile().getParId());
-		resultat.put("ar_profile", Objects.isNull(doc.getProfile()) ? "" : doc.getProfile().getArProfile());
-		resultat.put("elasticid", doc.getElasticid());
-		resultat.put("serviceverseur", doc.getServiceverseur());
-		resultat.put("organisationversante", doc.getOrganisationversante());
-		resultat.put("organisationverseuse", doc.getOrganisationverseuse());
+		final UUID docId = UUID.fromString((String) input.get("docid"));
+		try {
+			// isMirror = false, get info from master DB
+			Document doc = documentDao.get(docId, false);
 
-		LOGGER.info("logging...  - nfz42013");
-		// TODO : } else {
-		// resultat.put("codeRetour", "10");
-		// resultat.put("message", "Document inexistant");
-		// }
+			resultat.put("docid", doc.getDocId().toString());
+			resultat.put("doctype", doc.getDoctype());
+			resultat.put("domnnom", doc.getDomnNom());
+			resultat.put("lot", doc.getLot());
+			resultat.put("iddepot", Objects.isNull(doc.getDepot()) ? "" : doc.getDepot().getIdDepot().toString());
+			resultat.put("conteneur", doc.getConteneur());
+			resultat.put("categorie", doc.getCategorie());
+			resultat.put("title", doc.getTitle());
+			resultat.put("description", doc.getDescription());
+			resultat.put("date", Date.from(doc.getDate().toInstant())); // Convert to Date for the sack of GWT Front
+			resultat.put("archiver_id", doc.getArchiverId());
+			resultat.put("content_type", doc.getContentType());
+			resultat.put("content_length",
+					Objects.isNull(doc.getContentLength()) ? "" : doc.getContentLength().intValue());
+			resultat.put("archive_date", Date.from(doc.getArchiveDate().toInstant())); // Convert to Date for the sack
+																						// of
+																						// GWT Front
+			resultat.put("archive_end", Date.from(doc.getArchiveEnd().toInstant())); // Convert to Date for the sack of
+																						// GWT
+																						// Front
+			resultat.put("application", doc.getApplication());
+			resultat.put("keywords",
+					Objects.isNull(doc.getKeywords()) ? "" : doc.getKeywords().replaceAll("<", "").replaceAll(">", ""));
+			resultat.put("author", doc.getAuthor());
+			resultat.put("archiver_mail", doc.getArchiverMail());
+			resultat.put("mailowner", doc.getMailowner());
+			resultat.put("domaineowner", doc.getDomaineowner());
+			resultat.put("par_id", Objects.isNull(doc.getProfile()) ? 0 : doc.getProfile().getParId());
+			resultat.put("ar_profile", Objects.isNull(doc.getProfile()) ? "" : doc.getProfile().getArProfile());
+			resultat.put("elasticid", doc.getElasticid());
+			resultat.put("serviceverseur", doc.getServiceverseur());
+			resultat.put("organisationversante", doc.getOrganisationversante());
+			resultat.put("organisationverseuse", doc.getOrganisationverseuse());
+
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.DOC_GET_DAO_ERROR, e,
+					"Recuperer l'info d'une archive", docId.toString(), null);
+		}
 	}
 
 	/**
@@ -766,62 +765,71 @@ public class DocumentService {
 	 * 
 	 * @param input
 	 * @param resultat
+	 * @throws AvpExploitException
 	 */
-	public void getList(final Map<String, Object> input, final Map<String, Object> resultat) {
+	public void getList(final Map<String, Object> input, final Map<String, Object> resultat)
+			throws AvpExploitException {
+		try {
+			User user = userDao.findByUserId((String) input.get("user"));
 
-		User user = userDao.findByUserId((String) input.get("user"));
-
-		// Find the profile for a given user where can Read or can Deposit
-		List<Profile> profiles = user.getParRights().stream().filter(pr -> pr.isParCanRead() || pr.isParCanDeposit())
-				.map(ParRight::getProfile).collect(Collectors.toList());
-
-		// Find 2 document with all the profiles, cf: getkeywords view in DB
-		List<Document> keyWordsView = documentDao.findTop2ByProfileInOrderByTimestampDesc(profiles);
-
-		List<Map<String, Object>> reponse = new LinkedList<>();
-		for (Document kw : keyWordsView) {
-			if (Objects.isNull(kw.getKeywords()))
-				continue;
-
-			Map<String, Object> ligne = new HashMap<>();
-
-			// Extract the first 5 key words
-			List<String> keywords = Arrays.asList(kw.getKeywords().split(">")).stream().map(e -> e.replace("<", ""))
+			// Find the profile for a given user where can Read or can Deposit
+			List<Profile> profiles = user.getParRights().stream()
+					.filter(pr -> pr.isParCanRead() || pr.isParCanDeposit()).map(ParRight::getProfile)
 					.collect(Collectors.toList());
-			// Completed if these is not 5
-			for (int i = 0, s = keywords.size(); i < (5 - s); i++) {
-				keywords.add("");
+
+			// Find 2 document with all the profiles, cf: getkeywords view in DB
+			List<Document> keyWordsView = documentDao.findTop2ByProfileInOrderByTimestampDesc(profiles);
+
+			List<Map<String, Object>> reponse = new LinkedList<>();
+			for (Document kw : keyWordsView) {
+				if (Objects.isNull(kw.getKeywords()))
+					continue;
+
+				Map<String, Object> ligne = new HashMap<>();
+
+				// Extract the first 5 key words
+				List<String> keywords = Arrays.asList(kw.getKeywords().split(">")).stream().map(e -> e.replace("<", ""))
+						.collect(Collectors.toList());
+				// Completed if these is not 5
+				for (int i = 0, s = keywords.size(); i < (5 - s); i++) {
+					keywords.add("");
+				}
+
+				ligne.put("docid", kw.getDocId().toString());
+				ligne.put("domnnom", kw.getDomnNom());
+				ligne.put("doctype", kw.getDoctype());
+				ligne.put("keyword1", keywords.get(0));
+				ligne.put("keyword2", keywords.get(1));
+				ligne.put("keyword3", keywords.get(2));
+				ligne.put("keyword4", keywords.get(3));
+				ligne.put("keyword5", keywords.get(4));
+				ligne.put("keywords", kw.getKeywords());
+				ligne.put("categorie", kw.getCategorie());
+				ligne.put("title", kw.getTitle());
+				ligne.put("date", Date.from(kw.getDate().toInstant())); // Convert to Date for the sack of GWT Front
+				ligne.put("archiver_id", kw.getArchiverId());
+				ligne.put("content_type", kw.getContentType());
+				ligne.put("content_length",
+						Objects.isNull(kw.getContentLength()) ? 0 : kw.getContentLength().intValue());
+				ligne.put("archive_date", Date.from(kw.getArchiveDate().toInstant())); // Convert to Date for the sack
+																						// of
+																						// GWT Front
+				ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); // Convert to Date for the sack of
+																						// GWT
+																						// Front
+				ligne.put("application", kw.getApplication());
+				ligne.put("archiver_mail", kw.getArchiverMail());
+				ligne.put("par_id", Objects.isNull(kw.getProfile()) ? 0 : kw.getProfile().getParId());
+				ligne.put("ar_profile", Objects.isNull(kw.getProfile()) ? "" : kw.getProfile().getArProfile());
+				ligne.put("elasticid", kw.getElasticid());
+
+				reponse.add(ligne);
 			}
 
-			ligne.put("docid", kw.getDocId().toString());
-			ligne.put("domnnom", kw.getDomnNom());
-			ligne.put("doctype", kw.getDoctype());
-			ligne.put("keyword1", keywords.get(0));
-			ligne.put("keyword2", keywords.get(1));
-			ligne.put("keyword3", keywords.get(2));
-			ligne.put("keyword4", keywords.get(3));
-			ligne.put("keyword5", keywords.get(4));
-			ligne.put("keywords", kw.getKeywords());
-			ligne.put("categorie", kw.getCategorie());
-			ligne.put("title", kw.getTitle());
-			ligne.put("date", Date.from(kw.getDate().toInstant())); // Convert to Date for the sack of GWT Front
-			ligne.put("archiver_id", kw.getArchiverId());
-			ligne.put("content_type", kw.getContentType());
-			ligne.put("content_length", Objects.isNull(kw.getContentLength()) ? 0 : kw.getContentLength().intValue());
-			ligne.put("archive_date", Date.from(kw.getArchiveDate().toInstant())); // Convert to Date for the sack of
-																					// GWT Front
-			ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); // Convert to Date for the sack of GWT
-																					// Front
-			ligne.put("application", kw.getApplication());
-			ligne.put("archiver_mail", kw.getArchiverMail());
-			ligne.put("par_id", Objects.isNull(kw.getProfile()) ? 0 : kw.getProfile().getParId());
-			ligne.put("ar_profile", Objects.isNull(kw.getProfile()) ? "" : kw.getProfile().getArProfile());
-			ligne.put("elasticid", kw.getElasticid());
-
-			reponse.add(ligne);
+			resultat.put("list", reponse);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.DOC_GET_DAO_ERROR, e, "Recuperer une liste keywords");
 		}
-
-		resultat.put("list", reponse);
 
 		// TODO : ??? why result is limited by 2.
 		// String request = "select a.docid, a.domnnom, doctype_archivage,
@@ -839,8 +847,9 @@ public class DocumentService {
 	 * Suppression logical d'un/des documents : maj 'logicaldelete' a true
 	 * 
 	 * @param input
+	 * @throws AvpExploitException
 	 */
-	public void logicalDelete(final Map<String, Object> input) {
+	public void logicalDelete(final Map<String, Object> input) throws AvpExploitException {
 		List<UUID> docIds = null;
 		// one document or a list of document
 		if (Objects.nonNull(input.get("docid")))
@@ -852,14 +861,19 @@ public class DocumentService {
 		}
 
 		if (Objects.nonNull(docIds)) {
-			// Mettre a jour logicaldete
-			List<Document> documents = documentDao.findAllByDocIdIn(docIds);
-			documents.forEach(d -> {
-				d.setLogicaldelete(true);
-				d.setLogicaldeletedate(ZonedDateTime.now());
-			});
+			try {
+				// Mettre a jour logicaldete
+				List<Document> documents = documentDao.findAllByDocIdIn(docIds);
+				documents.forEach(d -> {
+					d.setLogicaldelete(true);
+					d.setLogicaldeletedate(ZonedDateTime.now());
+				});
 
-			documentDao.saveAll(documents);
+				documentDao.saveAll(documents);
+			} catch (AvpDaoException e) {
+				throw new AvpExploitException(AvpExploitExceptionCode.DOC_UPDATE_DAO_ERROR, e,
+						"Supprimer logical des archives", docIds.toString(), null);
+			}
 		}
 	}
 
@@ -1135,7 +1149,8 @@ public class DocumentService {
 			return output.docId;
 
 		} catch (Exception e) {
-			throw new AvpExploitException("303", e, "Mettre à jour la GED avec l'archive", null, null, null);
+			throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_DOC_GET_GED, e,
+					"Mettre à jour la GED avec l'archive");
 		}
 	}
 
@@ -1164,12 +1179,8 @@ public class DocumentService {
 			result.put("docsname", input.get("docsname"));
 			result.put("codeRetour", "OK");
 		} else {
-			try {
-				result = getGEDContent(input);
-			} catch (Exception e1) {
-				throw new AvpExploitException("301", e1, "Récupérer de la GED les informations du document à archiver",
-						null, null, null);
-			}
+			// getGEDContent doesn't raise any exception
+			result = getGEDContent(input);
 		}
 
 		if (ReturnCode.OK.toString().equals(result.get("codeRetour"))) {
@@ -1242,9 +1253,9 @@ public class DocumentService {
 			try {
 				document.setArchiveEnd(getDestructionDate(user, document.getDoctype(), document.getCategorie(),
 						document.getArchiveDate()));
-			} catch (PersistenceException e1) {
-				throw new AvpExploitException("610", e1, "Calcule de la date d''expiration du document", null, null,
-						null);
+			} catch (AvpDaoException e1) {
+				throw new AvpExploitException(AvpExploitExceptionCode.DOC_UPDATE_DAO_ERROR, e1,
+						"Calcule de la date d''expiration du document");
 			}
 			document.setAuthor((String) result.get("author"));
 			document.setMailowner((String) result.get("mailowner"));
@@ -1265,54 +1276,48 @@ public class DocumentService {
 			document.setArchiverId(user);
 			document.setStatut(DocumentStatut.REARDY_FOR_ARCHIVE.getStatutCode());
 
-			if (storageService.archive(document)) {
-				LOGGER.info("document stored - nfz42013");
-				LOGGER.info("empreinte " + document.getDocId() + " stored - nfz42013");
-				if (!noGED) {
-					HashMap<String, Object> GEDInfo = new HashMap<String, Object>();
-					GEDInfo.put("user", document.getArchiverId());
-					GEDInfo.put("elasticid", document.getElasticid());
-					GEDInfo.put("archivage_profile_id",
-							Objects.isNull(document.getProfile()) ? null : document.getProfile().getParId());
-					GEDInfo.put("docid", document.getDocId().toString());
-					GEDInfo.put("keywords", document.getKeywords());
-					GEDInfo.put("doctype", document.getDoctype());
-					GEDInfo.put("mailowner", document.getMailowner());
-					GEDInfo.put("domainowner", document.getDomaineowner());
-					GEDInfo.put("archive_date", document.getArchiveDate());
-					GEDInfo.put("archive_status", DraftStatut.ARCHIVING.toString());
+			storageService.archive(document);
 
-					try {
-						updateGED(GEDInfo, Commande.STORE);
-					} catch (PersistenceException e) {
-						throw new AvpExploitException("611", e,
-								"Mise à jour de la GEd avec les informations d''archivage", null,
-								document.getDocId().toString(), null);
-					}
-					LOGGER.info("document " + document.getDocId() + " updated in ged - nfz42013");
+			LOGGER.info("document stored - nfz42013");
+			LOGGER.info("empreinte " + document.getDocId() + " stored - nfz42013");
+
+			if (!noGED) {
+				HashMap<String, Object> GEDInfo = new HashMap<String, Object>();
+				GEDInfo.put("user", document.getArchiverId());
+				GEDInfo.put("elasticid", document.getElasticid());
+				GEDInfo.put("archivage_profile_id",
+						Objects.isNull(document.getProfile()) ? null : document.getProfile().getParId());
+				GEDInfo.put("docid", document.getDocId().toString());
+				GEDInfo.put("keywords", document.getKeywords());
+				GEDInfo.put("doctype", document.getDoctype());
+				GEDInfo.put("mailowner", document.getMailowner());
+				GEDInfo.put("domainowner", document.getDomaineowner());
+				GEDInfo.put("archive_date", document.getArchiveDate());
+				GEDInfo.put("archive_status", DraftStatut.ARCHIVING.toString());
+
+				// updateGET doesn't raise any Exception
+				Map<String, Object> res = updateGED(GEDInfo, Commande.STORE);
+				if (!ReturnCode.OK.toString().equals((String) res.get("codeRetour"))) {
+					throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_DOC_GET_GED,
+							new Exception((String) res.get("message")),
+							"Mise à jour de la GEd avec les informations d''archivage", document.getDocId().toString(),
+							null);
 				}
-				if (storeFromAVP) {
-					try {
-						// Update Draft's state
-						draftDao.updateStoredDraft(draftid, document.getDocId(), DraftStatut.ARCHIVING, "Pré-archivé");
-					} catch (PersistenceException e) {
-						throw new AvpExploitException("101", e,
-								"Mise à jour du draft avec les informations d''archivage", null,
-								document.getDocId().toString(), null);
-					}
-				}
-				resultat.put("codeRetour", "OK");
-				resultat.put("message", "");
-				resultat.put("docid", document.getDocId().toString());
-			} else {
-				resultat.put("codeRetour", "99");
-				resultat.put("message", "impossible de stocker le document dans le file système");
+				LOGGER.info("document " + document.getDocId() + " updated in ged - nfz42013");
 			}
-
-		} else {
-			resultat.put("codeRetour", "55");
-			resultat.put("message", "document not found");
-
+			if (storeFromAVP) {
+				try {
+					// Update Draft's state
+					draftDao.updateStoredDraft(draftid, document.getDocId(), DraftStatut.ARCHIVING, "Pré-archivé");
+				} catch (AvpDaoException e) {
+					throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_SAVE_ERROR, e,
+							"Mise à jour du draft avec les informations d''archivage", document.getDocId().toString(),
+							null);
+				}
+			}
+			resultat.put("codeRetour", "OK");
+			resultat.put("message", "");
+			resultat.put("docid", document.getDocId().toString());
 		}
 	}
 
@@ -1375,16 +1380,14 @@ public class DocumentService {
 	 *            le document
 	 * @return l'empreinte calculée
 	 * @throws AvpExploitException
-	 * @throws UnsupportedEncodingException
-	 * @throws NoSuchAlgorithmException
 	 */
 	public String computePrint(final Document document) throws AvpExploitException {
 		try {
 			return Sha.encode(document.getTitle() + document.getArchiveDate().toString()
 					+ Base64.getEncoder().encodeToString(document.getContent()), "utf-8");
 		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			// TODO : AVPExploitException a gerer
-			throw new AvpExploitException("1", e);
+			throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_DOC_COMPUTE_PRINT_ERROR, e,
+					"Calculer l'empreinte du document", document.getDocId().toString(), null);
 		}
 	}
 
@@ -1396,16 +1399,14 @@ public class DocumentService {
 	 *            le document
 	 * @return l'empreinte calculée
 	 * @throws AvpExploitException
-	 * @throws UnsupportedEncodingException
-	 * @throws NoSuchAlgorithmException
 	 */
 	public String computeTelinoPrint(final Document document) throws AvpExploitException {
 		try {
 			return Sha.encode(ServerProc.password1 + ServerProc.password2
 					+ Base64.getEncoder().encodeToString(document.getContent()), "utf-8");
 		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			// TODO : AVPExploitException a gerer
-			throw new AvpExploitException("1", e);
+			throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_DOC_COMPUTE_PRINT_ERROR, e,
+					"Calculer l'empreinte Telino du document", document.getDocId().toString(), null);
 		}
 	}
 

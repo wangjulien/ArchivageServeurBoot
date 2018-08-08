@@ -111,7 +111,7 @@ public class TestJournalArchivageService {
 		
 		// pre treatment before sealing the log archive : archive all the documents ready for achievement
 		when(documentDao.getAllDocIdReadyForArchive()).thenReturn(Arrays.asList(journalXml));
-		when(storageService.check(journalXml.getDocId(), true)).thenReturn(true);
+//		when(storageService.check(journalXml.getDocId(), true)).thenReturn(true);
 		when(storageService.archive(anyString(), eq(journalXml))).thenReturn(journalXml);
 		// sealing
 		when(logArchiveDao.save(any(LogArchive.class))).thenReturn(logArchive);

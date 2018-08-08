@@ -11,15 +11,16 @@ import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 
 public interface FSProc {
 
-	boolean deleteFile(String sha1Unique) throws AvpExploitException;
+	public void deleteFile(final String sha1Unique) throws AvpExploitException;
 
-	boolean checkFile(String sha1Unique);
-	
-	boolean checkFiles(List<DocumentDto> documents, Map<UUID, FileReturnError> badDocs) throws AvpExploitException;
+	public void checkFile(final String sha1Unique) throws AvpExploitException;
 
-	byte[] getFile(String sha1Unique) throws AvpExploitException;
+	public boolean checkFiles(final List<DocumentDto> documents, final Map<UUID, FileReturnError> badDocs)
+			throws AvpExploitException;
 
-	void init(final StorageParam storageParam) throws Exception;
+	byte[] getFile(final String sha1Unique) throws AvpExploitException;
 
-	boolean writeFile(String sha1Unique, String contentBase64) throws AvpExploitException;
+	public void init(final StorageParam storageParam) throws AvpExploitException;
+
+	public void writeFile(final String sha1Unique, final String contentBase64) throws AvpExploitException;
 }

@@ -29,7 +29,9 @@ import com.telino.avp.entity.archive.CommunicationList;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Restitution;
 import com.telino.avp.entity.archive.RestitutionList;
+import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
 import com.telino.avp.protocol.DbEntityProtocol.CommunicationState;
 import com.telino.avp.protocol.DbEntityProtocol.LogArchiveType;
@@ -87,9 +89,12 @@ public class ComAndRestService {
 	 */
 	public void getCommunication(final Map<String, Object> input, final Map<String, Object> resultat)
 			throws AvpExploitException {
-
-		Communication communication = communicationDao
-				.findByComId(UUID.fromString((String) input.get("communicationid")));
+		Communication communication = null;
+		try {
+			communication = communicationDao.findByComId(UUID.fromString((String) input.get("communicationid")));
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_COM_ARCHIVE, e, "Recuperer une communication");
+		}
 
 		try (ByteArrayOutputStream outputContentZip = new ByteArrayOutputStream();
 				ZipOutputStream output = new ZipOutputStream(outputContentZip)) {
@@ -97,8 +102,9 @@ public class ComAndRestService {
 			if (CommunicationState.V == communication.getCommunicationStatus()) {
 				for (CommunicationList cl : communication.getCommunicationList()) {
 					if (Objects.isNull(cl.getDocument())) {
-						throw new AvpExploitException("542", null, "Récupération de l'archive lors de la communication "
-								+ communication.getCommunicationId().toString(), null, null, null);
+						throw new AvpExploitException(AvpExploitExceptionCode.GET_COM_ARCHIVE, null,
+								"Récupération de l'archive lors de la communication "
+										+ communication.getCommunicationId().toString());
 					}
 
 					// Get the document, including content
@@ -144,23 +150,24 @@ public class ComAndRestService {
 
 		} catch (IOException e) {
 			LOGGER.error(e.getMessage());
-			throw new AvpExploitException("541", e, "Génération du fichier zip pour la communication", null, null,
-					null);
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_COM_ZIP_FILE, e,
+					"Génération du fichier zip pour la communication");
 		}
 
 	}
 
 	/**
-	 * TODO : create a JPA dynamic query in the place of composite String query
+	 * Enregister une communication avec les documents
 	 * 
 	 * @param input
 	 * @return
 	 */
-	public Communication communication(final Map<String, Object> input) {
+	public Communication communication(final Map<String, Object> input) throws AvpExploitException {
 
 		// If the user can communication a batch of docs
 		final String userId = (String) input.get("user");
 
+		// TODO : !!! Droit de communication par list de document
 		// if
 		// (!userProfileRightService.canDoThePredict(doc.getParRights().getProfile().getParId(),
 		// userId, ParRight::isParCanCommunicate)) {
@@ -206,33 +213,38 @@ public class ComAndRestService {
 
 		LOGGER.info(request);
 
-		// Get the document list
-		List<Document> documentList = documentDao.getDocumentsByQuery(request);
+		try {
+			// Get the document list
+			List<Document> documentList = documentDao.getDocumentsByQuery(request);
 
-		// New communication instance
-		Communication newCommunication = new Communication();
-		newCommunication.setUserId((String) input.get("user"));
-		newCommunication.setDomnNom((String) input.get("domnnom"));
-		newCommunication.setCommunicationStatus(CommunicationState.E);
-		newCommunication.setCommunicationMotif((String) input.get("communicationmotif"));
-		newCommunication.setHorodatage(ZonedDateTime.now());
-		// expiration d'une communication après 15 jours.
-		newCommunication.setCommunicationEnd(ZonedDateTime.now().plus(15, ChronoUnit.DAYS));
+			// New communication instance
+			Communication newCommunication = new Communication();
+			newCommunication.setUserId((String) input.get("user"));
+			newCommunication.setDomnNom((String) input.get("domnnom"));
+			newCommunication.setCommunicationStatus(CommunicationState.E);
+			newCommunication.setCommunicationMotif((String) input.get("communicationmotif"));
+			newCommunication.setHorodatage(ZonedDateTime.now());
+			// expiration d'une communication après 15 jours.
+			newCommunication.setCommunicationEnd(ZonedDateTime.now().plus(15, ChronoUnit.DAYS));
 
-		// Add the documents in the communication
-		for (Document doc : documentList) {
-			CommunicationList comList = new CommunicationList();
-			comList.setCommunication(newCommunication);
-			comList.setDocument(doc);
-			comList.setTitle(doc.getTitle());
-			comList.setCommunique(false);
+			// Add the documents in the communication
+			for (Document doc : documentList) {
+				CommunicationList comList = new CommunicationList();
+				comList.setCommunication(newCommunication);
+				comList.setDocument(doc);
+				comList.setTitle(doc.getTitle());
+				comList.setCommunique(false);
 
-			newCommunication.addCommunicationList(comList);
+				newCommunication.addCommunicationList(comList);
+			}
+
+			communicationDao.save(newCommunication);
+
+			return newCommunication;
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_COM_DAO_ERROR, e,
+					"Enregister une communication avec les documents");
 		}
-
-		communicationDao.save(newCommunication);
-
-		return newCommunication;
 
 	}
 
@@ -240,30 +252,39 @@ public class ComAndRestService {
 	 * Valider une communication, et sa liste
 	 * 
 	 * @param communication
+	 * @throws AvpExploitException
 	 */
-	public void validationCommunication(final Communication communication) {
+	public void validationCommunication(final Communication communication) throws AvpExploitException {
+		try {
+			communication.setCommunicationStatus(CommunicationState.V);
 
-		communication.setCommunicationStatus(CommunicationState.V);
+			// Persist the communication list associated with communique = true
+			communication.getCommunicationList().forEach(cl -> cl.setCommunique(true));
 
-		// Persist the communication list associated with communique = true
-		communication.getCommunicationList().forEach(cl -> cl.setCommunique(true));
-
-		communicationDao.save(communication);
+			communicationDao.save(communication);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_COM_DAO_ERROR, e, "Valider une communication");
+		}
 	}
 
 	/**
 	 * Refuser une communication
 	 * 
 	 * @param comId
+	 * @throws AvpExploitException
 	 */
-	public void refusCommunication(final UUID comId) {
-		// validateCommunication
-		Communication communication = communicationDao.findByComId(comId);
+	public void refusCommunication(final UUID comId) throws AvpExploitException {
+		try {
+			// validateCommunication
+			Communication communication = communicationDao.findByComId(comId);
 
-		// Set state with R, for refused
-		communication.setCommunicationStatus(CommunicationState.R);
+			// Set state with R, for refused
+			communication.setCommunicationStatus(CommunicationState.R);
 
-		communicationDao.save(communication);
+			communicationDao.save(communication);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_COM_DAO_ERROR, e, "Refuser une communication");
+		}
 	}
 
 	/**
@@ -290,8 +311,9 @@ public class ComAndRestService {
 
 			for (RestitutionList rl : restitution.getRestitutionList()) {
 				if (Objects.isNull(rl.getDocument())) {
-					throw new AvpExploitException("542", null, "Récupération de l'archive lors de la restitution "
-							+ restitution.getRestitutionId().toString(), null, null, null);
+					throw new AvpExploitException(AvpExploitExceptionCode.GET_COM_ARCHIVE, null,
+							"Récupération de l'archive lors de la restitution "
+									+ restitution.getRestitutionId().toString());
 				}
 
 				// Get the document, including content
@@ -336,8 +358,8 @@ public class ComAndRestService {
 
 		} catch (IOException e) {
 			LOGGER.error(e.getMessage());
-			throw new AvpExploitException("541", e, "Génération du fichier zip pour la communication", null, null,
-					null);
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_REST_ZIP_FILE, e,
+					"Génération du fichier zip pour la restitution");
 		}
 
 	}
@@ -347,8 +369,10 @@ public class ComAndRestService {
 	 * 
 	 * @param input
 	 * @param resultat
+	 * @throws AvpExploitException
 	 */
-	public void restitute(final Map<String, Object> input, final Map<String, Object> resultat) {
+	public void restitute(final Map<String, Object> input, final Map<String, Object> resultat)
+			throws AvpExploitException {
 
 		// get file list
 		String request = (String) input.get("sqlRequest");
@@ -387,31 +411,36 @@ public class ComAndRestService {
 
 		LOGGER.info(request);
 
-		// Get the document list
-		List<Document> documentList = documentDao.getDocumentsByQuery(request);
+		try {
+			// Get the document list
+			List<Document> documentList = documentDao.getDocumentsByQuery(request);
 
-		Restitution newRestitution = new Restitution();
-		newRestitution.setUserId((String) input.get("user"));
-		newRestitution.setDomnNom((String) input.get("domnnom"));
-		newRestitution.setRestitutionMotif((String) input.get("restitutionmotif"));
-		newRestitution.setRestitutionStatus(RestitutionState.E);
-		newRestitution.setHorodatage(ZonedDateTime.now());
-		newRestitution.setDestinataire((String) input.get("destinataire"));
-		// expiration d'une Restitution après 62 jours.
-		newRestitution.setRestitutionEnd(ZonedDateTime.now().plus(62, ChronoUnit.DAYS));
+			Restitution newRestitution = new Restitution();
+			newRestitution.setUserId((String) input.get("user"));
+			newRestitution.setDomnNom((String) input.get("domnnom"));
+			newRestitution.setRestitutionMotif((String) input.get("restitutionmotif"));
+			newRestitution.setRestitutionStatus(RestitutionState.E);
+			newRestitution.setHorodatage(ZonedDateTime.now());
+			newRestitution.setDestinataire((String) input.get("destinataire"));
+			// expiration d'une Restitution après 62 jours.
+			newRestitution.setRestitutionEnd(ZonedDateTime.now().plus(62, ChronoUnit.DAYS));
 
-		// Add the documents in the communication
-		for (Document doc : documentList) {
-			RestitutionList restList = new RestitutionList();
-			restList.setRestitution(newRestitution);
-			restList.setDocument(doc);
-			restList.setTitle(doc.getTitle());
-			restList.setRestitue(false);
+			// Add the documents in the communication
+			for (Document doc : documentList) {
+				RestitutionList restList = new RestitutionList();
+				restList.setRestitution(newRestitution);
+				restList.setDocument(doc);
+				restList.setTitle(doc.getTitle());
+				restList.setRestitue(false);
 
-			newRestitution.addRestitutionList(restList);
+				newRestitution.addRestitutionList(restList);
+			}
+
+			restitutionDao.save(newRestitution);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_REST_DAO_ERROR, e,
+					"Enregister une restitution avec les documents");
 		}
-
-		restitutionDao.save(newRestitution);
 	}
 
 	/**
@@ -423,26 +452,30 @@ public class ComAndRestService {
 	 */
 	public void validationRestitution(final Map<String, Object> input, final Map<String, Object> resultat)
 			throws AvpExploitException {
+		try {
+			Restitution restitution = restitutionDao.findByRestId(UUID.fromString((String) input.get("restitutionid")));
 
-		Restitution restitution = restitutionDao.findByRestId(UUID.fromString((String) input.get("restitutionid")));
+			// Delete the documents of restitution
+			for (RestitutionList rl : restitution.getRestitutionList()) {
+				input.put("docid", rl.getDocument().getDocId().toString());
+				input.put("elasticid", rl.getDocument().getElasticid());
+				input.put("docsname", rl.getDocument().getTitle());
 
-		// Delete the documents of restitution
-		for (RestitutionList rl : restitution.getRestitutionList()) {
-			input.put("docid", rl.getDocument().getDocId().toString());
-			input.put("elasticid", rl.getDocument().getElasticid());
-			input.put("docsname", rl.getDocument().getTitle());
+				// isBgTask = false
+				documentService.delete(input, resultat, false);
 
-			// isBgTask = false
-			documentService.delete(input, resultat, false);
+				// Only when delete is successful, list is marked with Restitue = true
+				if (ReturnCode.OK.toString().equals((String) resultat.get("codeRetour")))
+					rl.setRestitue(true);
+			}
 
-			// Only when delete is successful, list is marked with Restitue = true
-			if (ReturnCode.OK.toString().equals((String) resultat.get("codeRetour")))
-				rl.setRestitue(true);
+			restitution.setRestitutionStatus(RestitutionState.V);
+
+			restitutionDao.save(restitution);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_REST_DAO_ERROR, e,
+					"Valider une restitution et suprimer les documents");
 		}
-
-		restitution.setRestitutionStatus(RestitutionState.V);
-
-		restitutionDao.save(restitution);
 	}
 
 	/**

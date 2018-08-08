@@ -139,7 +139,7 @@ public class TestDocumentService {
 		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 
 		// All goes well
-		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(true);
+//		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(true);
 		when(documentDao.get(TestConstants.TEST_DOC_ID, false)).thenReturn(new Document());
 
 		documentService.control(input);
@@ -147,7 +147,7 @@ public class TestDocumentService {
 		verify(journalArchiveService).log(anyMap());
 
 		// If Check file by Storage goes wrong
-		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(false);
+//		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(false);
 		documentService.control(input);
 	}
 
@@ -225,7 +225,7 @@ public class TestDocumentService {
 
 		when(documentDao.get(any(UUID.class), eq(false))).thenReturn(document);
 		when(userProfileRightService.canDoThePredict(eq(1), eq(USER_ID), any())).thenReturn(true);
-		when(storageService.delete(document)).thenReturn(true);
+//		when(storageService.delete(document)).thenReturn(true);
 
 		//
 		// simulate the NeoGed return info
@@ -294,7 +294,7 @@ public class TestDocumentService {
 	}
 
 	@Test
-	public void get_info() {
+	public void get_info() throws AvpExploitException {
 		Document document = new Document();
 		document.setDocId(TestConstants.TEST_DOC_ID);
 
@@ -309,7 +309,7 @@ public class TestDocumentService {
 	}
 
 	@Test
-	public void get_list() {
+	public void get_list() throws AvpExploitException {
 
 		input.clear();
 		input.put("user", USER_ID);
@@ -375,7 +375,7 @@ public class TestDocumentService {
 	}
 
 	@Test
-	public void logical_delete() {
+	public void logical_delete() throws AvpExploitException {
 
 		Document doc = new Document();
 		doc.setLogicaldelete(false);

@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Resource;
-import javax.persistence.PersistenceException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +26,9 @@ import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Empreinte;
 import com.telino.avp.entity.archive.EncryptionKey;
 import com.telino.avp.entity.param.Param;
+import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.service.SwitchDataSourceService;
 import com.telino.avp.service.archivage.DocumentService;
@@ -84,18 +85,12 @@ public class FsStorageService extends AbstractStorageService {
 		// - idStorage est vide et Hostname renseigne
 		//
 
-		try {
-			// Master storage unit
-			fsprocMaster.init(appParam.getMasterStorageParam());
-			// Mirror storage unit
-			fsprocMirror.init(appParam.getMirrorStorageParam());
-
-			// Update idStorage parameters
-			paramDao.saveParam(appParam);
-		} catch (Exception e) {
-			throw new AvpExploitException("509", e, "Initialisation des connections avec les unités de stockage", null,
-					null, null);
-		}
+		// Master storage unit
+		fsprocMaster.init(appParam.getMasterStorageParam());
+		// Mirror storage unit
+		fsprocMirror.init(appParam.getMirrorStorageParam());
+		// Update idStorage parameters
+		paramDao.saveParam(appParam);
 
 		// TODO : why check passwords here ?
 		if (ServerProc.password1 != null && ServerProc.password2 != null) {
@@ -114,41 +109,28 @@ public class FsStorageService extends AbstractStorageService {
 						paramDao.saveParam(appParam);
 
 					} catch (Exception e) {
-						throw new AvpExploitException("605", e, "Initialisation du module de chiffrement", null, null,
-								null);
+						throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INIT_ENCRYPT_ERROR, e,
+								"Initialisation du module de chiffrement");
 					}
 				}
 			}
 		}
-		// else {
-		// LOGGER.error("Les deux Passwords sont pas valorises, appli est bloque!");
-		// throw new AVPExploitException("509", new Throwable(),
-		// "Initialisation des connections avec les unités de stockage", null, null,
-		// null);
-		// }
 	}
 
 	@Override
-	public boolean archive(final Document document) {
+	public void archive(final Document document) throws AvpExploitException {
 		// Valoriser les empreintes
-		try {
-			if (Objects.isNull(document.getEmpreinte()))
-				document.setEmpreinte(new Empreinte());
+		if (Objects.isNull(document.getEmpreinte()))
+			document.setEmpreinte(new Empreinte());
 
-			document.getEmpreinte().setEmpreinteInterne(documentService.computeTelinoPrint(document));
-			document.getEmpreinte().setEmpreinte(documentService.computePrint(document));
-		} catch (AvpExploitException e) {
-			LOGGER.error("Erreur lors de hachage du document : " + document.getTitle());
-			return false;
-		}
+		document.getEmpreinte().setEmpreinteInterne(documentService.computeTelinoPrint(document));
+		document.getEmpreinte().setEmpreinte(documentService.computePrint(document));
 
+		// Encryption
 		Param appParam = SwitchDataSourceService.CONTEXT_APP_PARAM.get();
-
 		if (appParam.isCryptage()) {
-
-			Chiffrement chiffrement = chiffrementDao.findChiffrementByCrytId(appParam.getCryptageid());
-
 			try {
+				Chiffrement chiffrement = chiffrementDao.findChiffrementByCrytId(appParam.getCryptageid());
 				// Chiffrement
 				Map<String, byte[]> resultCrypt = documentService.encrypt(document.getContent(),
 						chiffrement.getEncryptionKey());
@@ -159,48 +141,37 @@ public class FsStorageService extends AbstractStorageService {
 				document.setCryptageAlgo(chiffrement.getAlgorythm());
 				document.setChiffrement(chiffrement);
 
-			} catch (AesCipherException e) {
-				LOGGER.error("Erreur lors de chiffrer document : " + document.getTitle());
-				return false;
+			} catch (AvpDaoException | AesCipherException e) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_ENCRYPT_ERROR, e, "Crypter document",
+						document.getDocId().toString(), null);
 			}
 		}
 
-		documentDao.fillEmpreinteUnique(document);
-
-		// TODO : commet archiveFS() toujour return true, il faut bien gerer l'EXCEPTION
-
 		try {
+			documentDao.fillEmpreinteUnique(document);
+
 			// Si archivage mirror echoue, on s'arrete
 			archiveFS(document, fsprocMirror);
-		} catch (Exception e) {
-			return false;
-		}
-		// Si archivage master echoue, on supprime mirror et s'arrete
-		try {
-			archiveFS(document, fsprocMaster);
-		} catch (Exception e) {
+
+			// Si archivage master echoue, on supprime mirror et s'arrete
 			try {
+				archiveFS(document, fsprocMaster);
+			} catch (Exception e) {
+				// suppression le doc archive dans mirror
 				fsprocMirror.deleteFile(document.getEmpreinte().getEmpreinteUnique());
-			} catch (AvpExploitException e1) {
-				LOGGER.error("impossible de supprimer les documents deja enregistrés pour la raison suivante : "
-						+ e1.getMessage());
+				throw e;
 			}
-			return false;
+
+			// Persister document
+			documentDao.saveMetaDonneesDocument(document);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_DOC_DAO_ERROR, e,
+					"Archiver document meta-donnee", document.getDocId().toString(), null);
 		}
-
-		// Persister document
-		documentDao.saveMetaDonneesDocument(document);
-
-		return true;
 	}
 
 	@Override
-	public boolean delete(final Document document) throws AvpExploitException {
-
-		//
-		// TODO : fsproc.deleteFile() toujours return TRUE, il faut gerer
-		// l'AVPExploitException
-		//
+	public void delete(final Document document) throws AvpExploitException {
 
 		// Lancer suppression de fichier du document dans unite mirror
 		fsprocMirror.deleteFile(document.getEmpreinte().getEmpreinteUnique());
@@ -208,12 +179,10 @@ public class FsStorageService extends AbstractStorageService {
 		// Lancer suppression de fichier du document dans unite mirror
 		fsprocMaster.deleteFile(document.getEmpreinte().getEmpreinteUnique());
 
-		
-		return true;
 	}
 
 	@Override
-	public boolean check(final UUID docId, final boolean toArchive) throws AvpExploitException {
+	public void check(final UUID docId, final boolean toArchive) throws AvpExploitException {
 
 		//
 		// Recuperer object Document en memoire avec contenue
@@ -223,15 +192,15 @@ public class FsStorageService extends AbstractStorageService {
 		try {
 			documentMaster = get(docId, fsprocMaster, false);
 		} catch (Exception e) {
-			throw new AvpExploitException("508", e, "Récupération des données de l'archive sur le stockage principal",
-					"Contrôle d'intégrité d'archive", docId.toString(), null);
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_GET_ERROR, e,
+					"Récupération des données de l'archive sur le stockage principal", docId.toString(), null);
 		}
 
 		try {
 			documentMirror = get(docId, fsprocMirror, true);
 		} catch (Exception e) {
-			throw new AvpExploitException("508", e, "Récupération des données de l'archive sur le stockage secondaire",
-					"Contrôle d'intégrité d'une archive", docId.toString(), null);
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_GET_ERROR, e,
+					"Récupération des données de l'archive sur le stockage secondaire", docId.toString(), null);
 		}
 
 		//
@@ -262,9 +231,9 @@ public class FsStorageService extends AbstractStorageService {
 			// QUE pour le MASTER ???
 			if (!empreinteMasterCalculated.equals(logArchiveDao.findHashForDocId(documentMaster.getDocId(), false))) {
 				// a modifier
-				throw new AvpExploitException("521", null,
+				throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_PRINT_CONFLICT_ERROR, null,
 						"Confrontation avec l'empreinte scellée dans le journal des archives lors du dépôt",
-						"Contrôle d'intégrité d'une archive", docId.toString(), null);
+						docId.toString(), null);
 			}
 		}
 
@@ -273,35 +242,25 @@ public class FsStorageService extends AbstractStorageService {
 		//
 
 		// 1. Empreinte calcule du master equale a empreiente enregistre
-
 		if (!empreinteMasterCalculated.equals(empreinteMasterToCheck)) {
 			if (toArchive)
-				throw new AvpExploitException("503", null,
-						"Confrontation de l'archive principale avec son empreinte ADELIS",
-						"Contrôle d'intégrité d'une archive", docId.toString(), null);
+				throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_PRINCIPAL_PRINT_ERROR, null,
+						"Confrontation de l'archive principale avec son empreinte ADELIS", docId.toString(), null);
 			else
-				throw new AvpExploitException("503", null, "Confrontation de l'archive principale avec son empreinte",
-						"Contrôle d'intégrité d'une archive", docId.toString(), null);
+				throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_PRINCIPAL_PRINT_ERROR, null,
+						"Confrontation de l'archive principale avec son empreinte", docId.toString(), null);
 		}
 
 		// 2. Empreinte calcule du master equale a empreinte calcule mirror
-
 		if (!empreinteMasterCalculated.equals(empreinteMirrorCalculated)) {
-			throw new AvpExploitException("513", null,
-					"Confrontation de l'archive secondaire avec son empreinte ADELIS",
-					"Contrôle d'intégrité d'une archive", docId.toString(), null);
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_MIRROR_PRINT_ERROR, null,
+					"Confrontation de l'archive secondaire avec son empreinte ADELIS", docId.toString(), null);
 		}
-
-		// tout controle pass
-		return true;
 	}
 
 	@Override
 	public boolean checkFiles(final List<UUID> docIds, final Map<UUID, FileReturnError> badDocsInUnit1,
 			final Map<UUID, FileReturnError> badDocsInUnit2) throws AvpExploitException {
-
-		LOGGER.info("Checkfiles: " + docIds);
-
 		boolean resultAllOk = true;
 
 		//
@@ -404,9 +363,14 @@ public class FsStorageService extends AbstractStorageService {
 	 * @throws AvpExploitException
 	 */
 	private Document get(final UUID docId, final FSProc fsproc, final boolean isMirror) throws AvpExploitException {
-
-		// Recupere les meta donnee du document
-		Document document = documentDao.get(docId, isMirror);
+		Document document = null;
+		try {
+			// Recupere les meta donnee du document
+			document = documentDao.get(docId, isMirror);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.DOC_GET_DAO_ERROR, e,
+					"Recuperer meta-donnee du document", docId.toString(), null);
+		}
 
 		// Recupere le contenu depuis FS
 		byte[] content = fsproc.getFile(document.getEmpreinte().getEmpreinteUnique());
@@ -423,13 +387,12 @@ public class FsStorageService extends AbstractStorageService {
 				content = documentService.decrypt(content, chiffrement.getEncryptionKey(), document.getCryptageIv());
 
 			} catch (Exception e) {
-				throw new AvpExploitException("531", e, "Décryptage du contenu d''une archive", null, docId.toString(),
-						null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_DECRYPT_ERROR, e,
+						"Décryptage du contenu d'une archive", docId.toString(), null);
 			}
 		}
 
 		document.setContent(content);
-
 		return document;
 	}
 
@@ -441,11 +404,10 @@ public class FsStorageService extends AbstractStorageService {
 	 * @return
 	 * @throws AvpExploitException
 	 */
-	private boolean archiveFS(Document document, FSProc fsproc) throws AvpExploitException {
+	private void archiveFS(final Document document, final FSProc fsproc) throws AvpExploitException {
 		String contentBase64 = Base64.getEncoder().encodeToString(document.getContent());
 
-		// TOUJOUR return true!!!
-		return fsproc.writeFile(document.getEmpreinte().getEmpreinteUnique(), contentBase64);
+		fsproc.writeFile(document.getEmpreinte().getEmpreinteUnique(), contentBase64);
 	}
 
 	/**

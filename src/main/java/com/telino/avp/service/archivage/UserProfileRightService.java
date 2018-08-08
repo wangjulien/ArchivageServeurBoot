@@ -11,8 +11,6 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.persistence.PersistenceException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,8 @@ import com.telino.avp.entity.context.ParRight;
 import com.telino.avp.entity.context.Profile;
 import com.telino.avp.entity.context.User;
 import com.telino.avp.entitysyst.SystInitPassword;
+import com.telino.avp.exception.AvpDaoException;
+import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
 import com.telino.avp.tools.ServerProc;
@@ -107,7 +107,6 @@ public class UserProfileRightService {
 	 * @param resultat
 	 */
 	public void getRights(final String userId, final Map<String, Object> resultat) {
-
 		User user = userDao.findByUserId(userId);
 
 		Map<Integer, String> profils = new HashMap<>();
@@ -133,10 +132,11 @@ public class UserProfileRightService {
 			rights.get(parId).put("par_canrestitute", pr.isParCanRestitute());
 
 			// Add all docTypes
-			String docTypes = profile.getDocTypes().stream().map(dt -> 
-				dt.getDocTypeArchivage().getDocTypeArchivage() + (Objects.isNull(dt.getCategorie()) ? "" : "-" + dt.getCategorie())
-			).collect(Collectors.joining(","));
-			
+			String docTypes = profile.getDocTypes().stream()
+					.map(dt -> dt.getDocTypeArchivage().getDocTypeArchivage()
+							+ (Objects.isNull(dt.getCategorie()) ? "" : "-" + dt.getCategorie()))
+					.collect(Collectors.joining(","));
+
 			documents.put(parId, docTypes);
 		}
 
@@ -226,7 +226,7 @@ public class UserProfileRightService {
 					return;
 				}
 			}
-		} catch (PersistenceException e) {
+		} catch (AvpDaoException e) {
 			LOGGER.error(e.getMessage());
 			resultat.put("codeRetour", "99");
 			resultat.put("message", e.getMessage());
@@ -242,9 +242,9 @@ public class UserProfileRightService {
 	 * @return
 	 */
 	private ReturnCode checkPasswordServer(final int id, final String password) {
-		Optional<SystInitPassword> initPswOpt = systInitPasswordDao.findById(id);
 
 		try {
+			Optional<SystInitPassword> initPswOpt = systInitPasswordDao.findById(id);
 			if (initPswOpt.isPresent()) {
 				String hash = initPswOpt.get().getHash();
 				if (hash.equals(Sha.encode(password, "utf-8"))) {
@@ -255,9 +255,8 @@ public class UserProfileRightService {
 			} else {
 				return ReturnCode.INIT;
 			}
-		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			// TODO : central manger exception
-			throw new PersistenceException(e);
+		} catch (AvpDaoException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			throw new AvpExploitException(, e, "Controler password du serveur");
 		}
 	}
 
@@ -274,9 +273,8 @@ public class UserProfileRightService {
 			initPsw.setPasswordId(id);
 			initPsw.setHash(Sha.encode(password, "utf-8"));
 			systInitPasswordDao.save(initPsw);
-		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			// TODO : central manger exception
-			throw new PersistenceException(e);
+		} catch (AvpDaoException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			throw new AvpExploitException(, e, "Mettre a jour password du serveur");
 		}
 
 	}

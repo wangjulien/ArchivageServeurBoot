@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.persistence.PersistenceException;
-
 import org.bouncycastle.tsp.TimeStampToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,7 +18,9 @@ import com.telino.avp.dao.LogEventDao;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.auxil.Journal;
 import com.telino.avp.entity.auxil.LogEvent;
+import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.DbEntityProtocol.LogEventType;
 import com.telino.avp.tools.BuildXmlFile;
 
@@ -44,40 +44,44 @@ public class JournalEventService extends AbstractJournalService {
 	private DocumentDao documentDao;
 
 	/**
+	 * Controle de LOG_EVENT avec un logid dans input
+	 * 
+	 * @param logId
+	 * @throws AvpExploitException
+	 */
+	public void checkLogEvent(final UUID logId) throws AvpExploitException {
+		try {
+			LogEvent logEvent = logEventDao.findLogEventById(logId);
+			// Controle of LOG_EVENT in the DB master (isMirror = false)
+			verifyJournal(logEvent, false);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Recupération du journal d'archive", null, logId.toString());
+		}
+	}
+
+	/**
 	 * recuperer LogEvent info - le document XML du log
 	 * 
 	 * @param logId
 	 * @param resultat
 	 * @throws Exception
 	 */
-	public void getLogFile(final UUID logId, final Map<String, Object> resultat) throws Exception {
+	public void getLogFile(final UUID logId, final Map<String, Object> resultat) throws AvpExploitException {
+		try {
+			LogEvent logEvent = logEventDao.findLogEventById(logId);
+			// get the XML file of LogEvent
+			Document journalxml = storageService.get(logEvent.getJournalXml().getDocId());
 
-		LogEvent logEvent = logEventDao.findLogEventById(logId);
-		// get the XML file of LogEvent
-		Document journalxml = storageService.get(logEvent.getJournalXml().getDocId());
-
-		byte[] content = journalxml.getContent();
-		resultat.put("content", content);
-		resultat.put("content_length", journalxml.getContentLength().intValue());
-		resultat.put("content_type", journalxml.getContentType());
-		resultat.put("title", journalxml.getTitle());
-
-		// TODO : } else {
-		// resultat.put("codeRetour", "10");
-		// resultat.put("message", "Document inexistant");
-		// }
-	}
-
-	/**
-	 * Controle de LOG_EVENT avec un logid dans input
-	 * 
-	 * @param logId
-	 * @throws AvpExploitException
-	 */
-	public void checklogevent(final UUID logId) throws AvpExploitException {
-		LogEvent logEvent = logEventDao.findLogEventById(logId);
-		// Controle of LOG_EVENT in the DB master (isMirror = false)
-		verifyJournal(logEvent, false);
+			byte[] content = journalxml.getContent();
+			resultat.put("content", content);
+			resultat.put("content_length", journalxml.getContentLength().intValue());
+			resultat.put("content_type", journalxml.getContentType());
+			resultat.put("title", journalxml.getTitle());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Recupération du journal d'evenemnt", null, logId.toString());
+		}
 	}
 
 	@Override
@@ -162,9 +166,9 @@ public class JournalEventService extends AbstractJournalService {
 
 			return BuildXmlFile.buildLogFile(rootXmldata, structXml, logArchives);
 
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("619", e, "Recupération du contenu du journal", null, null,
-					journal.getLogId().toString());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.BUILD_LOG_FILE_GET_CONTENU_DAO_ERROR, e,
+					"Recupération du contenu du journal d'evenement", null, journal.getLogId().toString());
 		}
 	}
 
@@ -196,7 +200,7 @@ public class JournalEventService extends AbstractJournalService {
 
 	@Override
 	protected void traitementPostErreur(final List<Document> attestationList) throws AvpExploitException {
-		
+
 	}
 
 	@Override
@@ -205,9 +209,9 @@ public class JournalEventService extends AbstractJournalService {
 			List<LogEvent> logEvents = logEventDao.findAllLogEventBeforeLogIdForContent(logId, isMirror);
 
 			return logEvents.stream().map(LogEvent::buildContent).collect(Collectors.joining());
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("702", null, "Recuperation du contenu du journal", null, null,
-					logId.toString());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_GET_CONTENU_DAO_ERROR, e,
+					"Recuperation du contenu du journal d'evenement", null, logId.toString());
 		}
 	}
 
@@ -215,8 +219,9 @@ public class JournalEventService extends AbstractJournalService {
 	protected Journal bookLogId() throws AvpExploitException {
 		try {
 			return logEventDao.save(new LogEvent());
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("619", e, "Attribution de l'identifiant du journal", null, null, null);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_LOG_DAO_ERROR, e,
+					"Attribution de l'identifiant du journal");
 		}
 	}
 
@@ -228,8 +233,8 @@ public class JournalEventService extends AbstractJournalService {
 				if (null != logEvent.getTimestampToken().getEncoded())
 					logEvent.setTimestampTokenBytes(logEvent.getTimestampToken().getEncoded());
 			} catch (IOException e) {
-				throw new AvpExploitException("507", e, "Ajout d'une entrée dans le journal des évènements", null, null,
-						logEvent.getLogId().toString());
+				throw new AvpExploitException(AvpExploitExceptionCode.SAVE_LOG_BUILD_TAMPON_ERROR, e,
+						"Ajout d'une entrée dans le journal des évènements", null, logEvent.getLogId().toString());
 			}
 		} else {
 			logEvent.setHorodatage(ZonedDateTime.now());
@@ -238,10 +243,9 @@ public class JournalEventService extends AbstractJournalService {
 		// Persister dans les deux DB l'entity valorise
 		try {
 			logEventDao.save(logEvent);
-
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("609", e, "Ajout d'une entrée dans le journal des évènements", null, null,
-					logEvent.getLogId().toString());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_LOG_DAO_ERROR, e,
+					"Ajout d'une entrée dans le journal des évènements", null, logEvent.getLogId().toString());
 		}
 	}
 }

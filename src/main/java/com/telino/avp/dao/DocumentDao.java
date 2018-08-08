@@ -201,11 +201,6 @@ public class DocumentDao {
 
 			masterDocumentRepository.save(docTo);
 		}
-		// } catch (PersistenceException e) {
-		// throw new AVPExploitException("621", e, "Restaurer meta donnée d'un document
-		// ", null, docId.toString(),
-		// null);
-		// }
 	}
 
 	/**

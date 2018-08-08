@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.telino.avp.TestConstants;
 import com.telino.avp.entity.param.StorageParam;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
 import com.telino.avp.service.storage.FSProcRemote;
@@ -71,7 +72,8 @@ public class TestFsProcRemote {
 		result.put("codeRetour", ReturnCode.OK.toString());
 
 		when(remoteCall.callServletWithJsonObject(any(JSONObject.class), anyString())).thenReturn(result.toString());
-		assertTrue(fsProcRemote.writeFile("sha1Unique", "contentBase64"));
+		
+		fsProcRemote.writeFile("sha1Unique", "contentBase64");
 
 		result.put("codeRetour", ReturnCode.KO.toString());
 		result.put("message", "Empreinte unique servant au stockage non communiquée");
@@ -80,7 +82,7 @@ public class TestFsProcRemote {
 		try {
 			fsProcRemote.writeFile("sha1Unique", "contentBase64");
 		} catch (AvpExploitException e) {
-			assertEquals("511", e.getMessage());
+			assertEquals(AvpExploitExceptionCode.STORAGE_INPUT_LACK_PRINT, e.getCodeErreur());
 		}
 
 		verify(remoteCall, times(3)).callServletWithJsonObject(any(JSONObject.class), anyString());
@@ -93,7 +95,7 @@ public class TestFsProcRemote {
 
 		when(remoteCall.callServletWithJsonObject(any(JSONObject.class), anyString())).thenReturn(result.toString());
 
-		assertTrue(fsProcRemote.deleteFile("sha1Unique"));
+		fsProcRemote.deleteFile("sha1Unique");
 
 		result.put("codeRetour", ReturnCode.KO.toString());
 		result.put("message", "Empreinte unique servant au stockage non communiquée");
@@ -102,7 +104,7 @@ public class TestFsProcRemote {
 		try {
 			fsProcRemote.deleteFile("sha1Unique");
 		} catch (AvpExploitException e) {
-			assertEquals("511", e.getMessage());
+			assertEquals(AvpExploitExceptionCode.STORAGE_INPUT_LACK_PRINT, e.getCodeErreur());
 		}
 
 		verify(remoteCall, times(3)).callServletWithJsonObject(any(JSONObject.class), anyString());

@@ -23,12 +23,12 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.telino.avp.entity.auxil.Journal;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 
 public class BuildXmlFile {
 
@@ -85,9 +85,9 @@ public class BuildXmlFile {
 						logEntry.appendChild(element);
 					} catch (NoSuchMethodException | SecurityException | IllegalAccessException
 							| IllegalArgumentException | InvocationTargetException e) {
-						throw new AvpExploitException("619", e, "Invoquer les methods de Journal", null, null,
-								logData.get("LogID"));
-					} 
+						throw new AvpExploitException(AvpExploitExceptionCode.BUILD_LOG_FILE_ERROR, e,
+								"Invoquer les methods de Journal", null, logData.get("LogID"));
+					}
 				}
 
 				rootElement.appendChild(logEntry);
@@ -105,23 +105,13 @@ public class BuildXmlFile {
 				transformer.transform(source, result);
 
 				return bos.toByteArray();
-			} 
+			}
 
-		} catch (IOException | ParserConfigurationException e) {
+		} catch (IOException | ParserConfigurationException | TransformerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			throw new AvpExploitException("619", e, "Création du fichier xml de stockage du journal", null, null,
-					logData.get("LogID"));
-		} catch (TransformerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new AvpExploitException("619", e, "Recupération du contenu du fichier xml de stockage du journal",
-					null, null, logData.get("LogID"));
-		} catch (DOMException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new AvpExploitException("619", e, "Mise à jour des données du fichier xml de stockage du journal",
-					null, null, logData.get("LogID"));
+			throw new AvpExploitException(AvpExploitExceptionCode.BUILD_LOG_FILE_ERROR, e,
+					"Invoquer les methods de Journal", null, logData.get("LogID"));
 		}
 
 	}

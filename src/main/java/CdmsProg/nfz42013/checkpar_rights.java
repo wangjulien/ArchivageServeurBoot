@@ -14,6 +14,7 @@ import com.telino.avp.ArchivageServeurBootApplication;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.context.Profile;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.service.journal.JournalArchiveService;
 import com.telino.avp.service.storage.AbstractStorageService;
 import com.telino.avp.service.storage.FsStorageService;
@@ -110,14 +111,11 @@ public class checkpar_rights extends MainObject {
 			Profile docProfile = new Profile();
 			docProfile.setParId(1);
 			attestation.setProfile(docProfile);
-			if (!storageService.archive(attestation)) {
-				try {
-					throw new Exception(
-							"Impossible d'archiver l'attestation de " + mode + " du profil d'archivage " + profil);
-				} catch (Exception e) {
-					throw new AvpExploitException("520", e,
-							"Archivage des attestations de " + mode + " de profil d'archivage", null, null, null);
-				}
+			try {
+				storageService.archive(attestation);
+			} catch (Exception e1) {
+				throw new AvpExploitException(AvpExploitExceptionCode.ARCHIVE_ATTESTATION_ERROR, e1,
+						"Archivage des attestations de " + mode + " de profil d'archivage");
 			}
 
 			Map<String, Object> inputToLog = new HashMap<>();

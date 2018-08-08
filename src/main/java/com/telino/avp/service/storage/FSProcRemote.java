@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.telino.avp.dto.DocumentDto;
 import com.telino.avp.entity.param.StorageParam;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
@@ -27,19 +28,19 @@ public class FSProcRemote implements FSProc {
 	@Autowired
 	private RemoteCall remoteCall;
 
+	// Thread local variable for saving storage Param during all HttpRequest
 	private ThreadLocal<StorageParam> storageParamLocal = new ThreadLocal<>();
 
 	@Override
-	public void init(final StorageParam storageParam) throws Exception {
+	public void init(final StorageParam storageParam) throws AvpExploitException {
 
 		// check remote FS parameters are correct, Remote Hostname should not be null
 		if (storageParam.getTypeStorage().equals("FileStorage") && storageParam.getRemoteOrLocal().equals("remote")
 				&& Objects.nonNull(storageParam.getHostName())) {
 			storageParamLocal.set(storageParam);
 		} else {
-			throw new AvpExploitException(
-					"Impossible d'initialiser le module de stockage local car les paramètres de stockages ne correspondent pas",
-					null);
+			throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_UNIT_PARAM_ERROR, null,
+					"Initialisation le module de stockage");
 		}
 
 		// If idStorage is not already assigned,
@@ -54,13 +55,14 @@ public class FSProcRemote implements FSProc {
 				result = (String) remoteCall.callServletWithJsonObject(param,
 						getServerUrlFromStorageParam(storageParamLocal.get()));
 			} catch (ClassNotFoundException | IOException e) {
-				throw new AvpExploitException("514", e, "Création d'un module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_CALL_SERVLET_ERROR, e,
+						"Création d'un module de stockage");
 			}
 			JSONObject json = new JSONObject(result);
 
 			if (!ReturnCode.OK.toString().equals(json.get("codeRetour"))) {
-				throw new AvpExploitException("517", (Throwable) json.get("message"),
-						"Création d'un module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_CREATE_ERROR,
+						new Exception((String) json.get("message")), "Création d'un module de stockage");
 			} else {
 				storageParam.setIdStorage((String) json.get("message"));
 			}
@@ -68,7 +70,7 @@ public class FSProcRemote implements FSProc {
 	}
 
 	@Override
-	public boolean writeFile(String sha1Unique, String contentBase64) throws AvpExploitException {
+	public void writeFile(final String sha1Unique, final String contentBase64) throws AvpExploitException {
 
 		JSONObject param = new JSONObject();
 		param.put("command", Commande.ARCHIVE.toString());
@@ -81,28 +83,36 @@ public class FSProcRemote implements FSProc {
 			result = (String) remoteCall.callServletWithJsonObject(param,
 					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
-			throw new AvpExploitException("514", e, "Archivage par le module de stockage", null, null, null);
+			throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_CALL_SERVLET_ERROR, e,
+					"Archivage par le module de stockage");
 		}
 		JSONObject json = new JSONObject(result);
 		if (!json.get("codeRetour").equals("OK")) {
+
+			if (json.get("message") == null || ((String) json.get("message")).isEmpty()) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_OUTPUT_ERROR, null,
+						"Extraire message retour - null");
+			}
+			String message = (String) json.get("message");
+
 			if (((String) json.get("message")).contains("Empreinte unique servant au stockage non communiquée")) {
-				throw new AvpExploitException("511", null, "Archivage par le module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_PRINT, new Exception(message),
+						"Archivage par le module de stockage");
 			} else if (((String) json.get("message")).contains("id du module de stockage non communiqué")) {
-				throw new AvpExploitException("512", null, "Archivage par le module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_ID, new Exception(message),
+						"Archivage par le module de stockage");
 			} else if (((String) json.get("message")).contains("Contenu du fichier à archiver vide")) {
-				throw new AvpExploitException("516", null, "Archivage par le module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_CONTENT,
+						new Exception(message), "Archivage par le module de stockage");
 			} else {
-				throw new AvpExploitException("515", (Throwable) json.get("message"),
-						"Création d'un module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_WRITE_ERROR, new Exception(message),
+						"Archivage d'un module de stockage");
 			}
 		}
-
-		// TODO : toujour return TRUE, inutile de utiliser return pour process control
-		return true;
 	}
 
 	@Override
-	public boolean deleteFile(String sha1Unique) throws AvpExploitException {
+	public void deleteFile(final String sha1Unique) throws AvpExploitException {
 
 		JSONObject param = new JSONObject();
 		param.put("command", Commande.DELETE.toString());
@@ -114,33 +124,41 @@ public class FSProcRemote implements FSProc {
 			result = (String) remoteCall.callServletWithJsonObject(param,
 					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
-			throw new AvpExploitException("514", e, "Suppression d'une archive par le module de stockage", null, null,
-					null);
+			throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_CALL_SERVLET_ERROR, e,
+					"Suppression d'une archive par le module de stockage");
 		}
 		JSONObject json = new JSONObject(result);
 		if (!json.get("codeRetour").equals("OK")) {
-			if (((String) json.get("message")).contains("Empreinte unique servant au stockage non communiquée")) {
-				throw new AvpExploitException("511", null, "Suppression d'une archive par le module de stockage", null,
-						null, null);
-			} else if (((String) json.get("message")).contains("id du module de stockage non communiqué")) {
-				throw new AvpExploitException("512", null, "Suppression d'une archive par le module de stockage", null,
-						null, null);
-			} else {
-				throw new AvpExploitException("515", null, "Suppression d'une archive par le module de stockage", null,
-						null, null);
+
+			if (json.get("message") == null || ((String) json.get("message")).isEmpty()) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_OUTPUT_ERROR, null,
+						"Extraire message retour - null");
 			}
-		} else {
-			return true;
+			String message = (String) json.get("message");
+
+			if (((String) json.get("message")).contains("Empreinte unique servant au stockage non communiquée")) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_PRINT, new Exception(message),
+						"Suppression d'une archive par le module de stockage");
+			} else if (((String) json.get("message")).contains("id du module de stockage non communiqué")) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_ID, new Exception(message),
+						"Suppression d'une archive par le module de stockage");
+			} else {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_DELET_ERROR, new Exception(message),
+						"Suppression d'une archive par le module de stockage");
+			}
 		}
+
 	}
 
 	@Override
-	public boolean checkFile(String sha1Unique) {
-		return false;
+	public void checkFile(final String sha1Unique) throws AvpExploitException {
+
+		// TODO : implementation of checkfile by Storage Module
+		throw new AvpExploitException(AvpExploitExceptionCode.SYSTEM_ERROR, null, "Check file");
 	}
 
 	@Override
-	public boolean checkFiles(List<DocumentDto> documents, Map<UUID, FileReturnError> badDocs)
+	public boolean checkFiles(final List<DocumentDto> documents, final Map<UUID, FileReturnError> badDocs)
 			throws AvpExploitException {
 		//
 		// Préparer la commande "checkfiles" à envoyer
@@ -154,8 +172,8 @@ public class FSProcRemote implements FSProc {
 		try {
 			param.put("documents", jsonMapper.writeValueAsString(documents));
 		} catch (JsonProcessingException e) {
-			throw new AvpExploitException("510", e, "Récupération d'une archive par le module de stockage", null, null,
-					null);
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_FILE_INPUT_ERROR, e,
+					"Parser documents a controler en JSON pour module de storage");
 		}
 
 		//
@@ -167,7 +185,8 @@ public class FSProcRemote implements FSProc {
 			result = (String) remoteCall.callServletWithJsonObject(param,
 					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
-			throw new AvpExploitException("514", e, "Check des archives par le module de stockage", null, null, null);
+			throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_CALL_SERVLET_ERROR, e,
+					"Check des archives par le module de stockage");
 		}
 
 		//
@@ -180,9 +199,9 @@ public class FSProcRemote implements FSProc {
 		if (!ReturnCode.OK.toString().equals(json.get("codeRetour").toString())) {
 
 			if (json.get("message") == null || ((String) json.get("message")).isEmpty()) {
-				throw new AvpExploitException("510", null, "Message retour est vide", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_OUTPUT_ERROR, null,
+						"Extraire message retour - null");
 			}
-
 			String message = (String) json.get("message");
 
 			// Si le CodeRetour est ERROR, alors,
@@ -193,22 +212,21 @@ public class FSProcRemote implements FSProc {
 					badDocs.putAll(jsonMapper.readValue(message, new TypeReference<HashMap<UUID, FileReturnError>>() {
 					}));
 				} catch (IOException e) {
-					throw new AvpExploitException("510", e, "Récupération d'une archive par le module de stockage",
-							null, null, null);
+					throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_OUTPUT_ERROR, e,
+							"Extraire les documents ne passent pas controle integralite");
 				}
 				return false;
 			}
 
 			if (message.contains("Liste Documents à controler non communiquée")) {
-				throw new AvpExploitException("511", null, "Check des archives par le module de stockage", null, null,
-						null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_PRINT, new Exception(message),
+						"Check des archives par le module de stockage");
 			} else if (message.contains("id du module de stockage non communiqué")) {
-				throw new AvpExploitException("512", null, "Check des archives par le module de stockage", null, null,
-						null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_ID, new Exception(message),
+						"Check des archives par le module de stockage");
 			} else {
-
-				throw new AvpExploitException("510", new Exception((String) json.get("message")),
-						"Récupération d'une archive par le module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_CHECK_ERROR, new Exception(message),
+						"Récupération d'une archive par le module de stockage");
 			}
 		} else {
 			return true;
@@ -216,7 +234,7 @@ public class FSProcRemote implements FSProc {
 	}
 
 	@Override
-	public byte[] getFile(String sha1Unique) throws AvpExploitException {
+	public byte[] getFile(final String sha1Unique) throws AvpExploitException {
 
 		JSONObject param = new JSONObject();
 		param.put("command", Commande.GET_DOC.toString());
@@ -228,20 +246,28 @@ public class FSProcRemote implements FSProc {
 			result = (String) remoteCall.callServletWithJsonObject(param,
 					getServerUrlFromStorageParam(storageParamLocal.get()));
 		} catch (ClassNotFoundException | IOException e) {
-			throw new AvpExploitException("514", e, "Récupération d'une archive par le module de stockage", null, null,
-					null);
+			throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_CALL_SERVLET_ERROR, e,
+					"Récupération d'une archive par le module de stockage");
 		}
 		JSONObject json = new JSONObject(result);
 		if (!json.get("codeRetour").equals("OK")) {
-			if (((String) json.get("message")).contains("Empreinte unique servant au stockage non communiquée")) {
-				throw new AvpExploitException("511", null, "Récupération d'une archive par le module de stockage", null,
-						null, null);
-			} else if (((String) json.get("message")).contains("id du module de stockage non communiqué")) {
-				throw new AvpExploitException("512", null, "Récupération d'une archive par le module de stockage", null,
-						null, null);
+
+			if (json.get("message") == null || ((String) json.get("message")).isEmpty()) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_OUTPUT_ERROR, null,
+						"Extraire message retour - null");
+			}
+
+			String message = (String) json.get("message");
+
+			if (message.contains("Empreinte unique servant au stockage non communiquée")) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_PRINT, new Exception(message),
+						"Récupération d'une archive par le module de stockage");
+			} else if (message.contains("id du module de stockage non communiqué")) {
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_INPUT_LACK_ID, new Exception(message),
+						"Récupération d'une archive par le module de stockage");
 			} else {
-				throw new AvpExploitException("510", (Throwable) json.get("message"),
-						"Récupération d'une archive par le module de stockage", null, null, null);
+				throw new AvpExploitException(AvpExploitExceptionCode.STORAGE_READ_ERROR, new Exception(message),
+						"Récupération d'une archive par le module de stockage");
 			}
 		} else {
 			String contentBase64 = json.get("content").toString();

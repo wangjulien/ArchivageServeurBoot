@@ -34,7 +34,5 @@ public class DaoExceptionAspect {
 			LOGGER.error(msg);
 			throw new AvpDaoException(msg, ex);
 		}
-
 	}
-
 }

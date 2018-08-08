@@ -12,8 +12,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.persistence.PersistenceException;
-
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.tsp.TSPException;
 import org.bouncycastle.tsp.TimeStampToken;
@@ -28,7 +26,9 @@ import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Draft;
 import com.telino.avp.entity.auxil.Journal;
 import com.telino.avp.entity.auxil.LogArchive;
+import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.DbEntityProtocol.DocumentStatut;
 import com.telino.avp.protocol.DbEntityProtocol.DraftStatut;
 import com.telino.avp.protocol.DbEntityProtocol.LogArchiveType;
@@ -62,12 +62,15 @@ public class JournalArchiveService extends AbstractJournalService {
 	 * @param logId
 	 * @throws AvpExploitException
 	 */
-	public void checklogcheck(final UUID logId) throws AvpExploitException {
-
-		LogArchive logArchive = logArchiveDao.findLogArchiveById(logId);
-
-		// Controle of LOG_ARCHIVE in the DB master (isMirror = false)
-		verifyJournal(logArchive, false);
+	public void checkLogArchive(final UUID logId) throws AvpExploitException {
+		try {
+			LogArchive logArchive = logArchiveDao.findLogArchiveById(logId);
+			// Controle of LOG_ARCHIVE in the DB master (isMirror = false)
+			verifyJournal(logArchive, false);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Recupération du journal d'archive", null, logId.toString());
+		}
 	}
 
 	/**
@@ -80,18 +83,18 @@ public class JournalArchiveService extends AbstractJournalService {
 	 */
 	public void getAttestation(final UUID logId, final Map<String, Object> resultat) throws AvpExploitException {
 
-		LogArchive logArchive = logArchiveDao.findLogArchiveById(logId);
-		Document attestation = storageService.get(logArchive.getAttestation().getDocId());
-		byte[] content = attestation.getContent();
-		resultat.put("content", content);
-		resultat.put("content_length", attestation.getContentLength().intValue());
-		resultat.put("content_type", attestation.getContentType());
-		resultat.put("title", attestation.getTitle());
-
-		// TODO : } else {
-		// resultat.put("codeRetour", "10");
-		// resultat.put("message", "Document inexistant");
-		// }
+		try {
+			LogArchive logArchive = logArchiveDao.findLogArchiveById(logId);
+			Document attestation = storageService.get(logArchive.getAttestation().getDocId());
+			byte[] content = attestation.getContent();
+			resultat.put("content", content);
+			resultat.put("content_length", attestation.getContentLength().intValue());
+			resultat.put("content_type", attestation.getContentType());
+			resultat.put("title", attestation.getTitle());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Recupération du journal d'archive", null, logId.toString());
+		}
 	}
 
 	@Override
@@ -158,9 +161,9 @@ public class JournalArchiveService extends AbstractJournalService {
 
 			return BuildXmlFile.buildLogFile(rootXmldata, structXml, logArchives);
 
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("619", e, "Recupération du contenu du journal", null, null,
-					journal.getLogId().toString());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.BUILD_LOG_FILE_GET_CONTENU_DAO_ERROR, e,
+					"Recupération du contenu du journal d'archive", null, journal.getLogId().toString());
 		}
 	}
 
@@ -192,32 +195,28 @@ public class JournalArchiveService extends AbstractJournalService {
 				inputToLog.put("operation", operation);
 				inputToLog.put("docid", doc.getDocId().toString());
 
-				// Check the entirety for archive
-				if (storageService.check(doc.getDocId(), true)) {
+				// Check the entirety for archive,
+				// An AvpExploitException will be raised if check is not good
+				storageService.check(doc.getDocId(), true);
 
-					inputToLog.put("userid", doc.getArchiverId());
-					inputToLog.put("mailid", doc.getArchiverMail());
-					inputToLog.put("docsname", doc.getTitle());
-					inputToLog.put("logtype", LogArchiveType.A.toString());
-					inputToLog.put("hash", doc.getEmpreinte().getEmpreinte());
+				inputToLog.put("userid", doc.getArchiverId());
+				inputToLog.put("mailid", doc.getArchiverMail());
+				inputToLog.put("docsname", doc.getTitle());
+				inputToLog.put("logtype", LogArchiveType.A.toString());
+				inputToLog.put("hash", doc.getEmpreinte().getEmpreinte());
 
-					Document attestation = storageService.archive(operation, doc);
-					inputToLog.put("attestationid", attestation.getDocId().toString());
+				Document attestation = storageService.archive(operation, doc);
+				inputToLog.put("attestationid", attestation.getDocId().toString());
 
-					// TODO : Rollback when error is thrown
-					// List<Document> listAttestation = new ArrayList<>();
-					// listAttestation.add(attestation);
+				// TODO : Rollback when error is thrown
+				// List<Document> listAttestation = new ArrayList<>();
+				// listAttestation.add(attestation);
 
-					log(inputToLog);
-
-				} else {
-					throw new AvpExploitException("503", null, "Recupération des métadonnées de l'archive", null,
-							doc.toString(), null);
-				}
+				log(inputToLog);
 			}
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("619", e, "Contrôle d'intégrité des factures avant scellement du journal",
-					null, null, null);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Recupération des métadonnées de l'archive");
 		}
 
 	}
@@ -244,9 +243,10 @@ public class JournalArchiveService extends AbstractJournalService {
 					draftDao.saveDraft(draft);
 				}
 			}
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("620", e, "Mise à jour des archives et drafts après scellement du journal",
-					null, null, journal.getLogId().toString());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SEAL_LOG_ARCHIVE_DRAFT_ERROR, e,
+					"Mise à jour des archives et drafts après scellement du journal", null,
+					journal.getLogId().toString());
 		}
 
 	}
@@ -262,18 +262,22 @@ public class JournalArchiveService extends AbstractJournalService {
 	@Override
 	protected String recupereContenu(final UUID logId, final boolean isMirror) throws AvpExploitException {
 		try {
-
 			List<LogArchive> logArchives = logArchiveDao.findAllLogArchiveBeforeLogIdForContent(logId, isMirror);
 
 			return logArchives.stream().map(LogArchive::buildContent).collect(Collectors.joining());
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("702", null, "Recuperation du contenu du journal", null, null,
-					logId.toString());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_GET_CONTENU_DAO_ERROR, e,
+					"Recuperation du contenu du journal d'archive", null, logId.toString());
 		}
 	}
 
-	public LogArchive findLogArchiveForDocId(UUID docId, boolean isMirror) {
-		return logArchiveDao.findLogArchiveForDocId(docId, isMirror);
+	public LogArchive findLogArchiveForDocId(UUID docId, boolean isMirror) throws AvpExploitException {
+		try {
+			return logArchiveDao.findLogArchiveForDocId(docId, isMirror);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Recupération du journal d'archive pour une archive", docId.toString(), null);
+		}
 	}
 
 	/**
@@ -283,8 +287,12 @@ public class JournalArchiveService extends AbstractJournalService {
 	 * @throws AvpExploitException
 	 */
 	public Set<LogArchive> getSellementLogArchiveForDocs(final List<UUID> docIds) throws AvpExploitException {
-
-		return logArchiveDao.getSellementLogArchiveForDocs(docIds);
+		try {
+			return logArchiveDao.getSellementLogArchiveForDocs(docIds);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
+					"Recupération des journaux d'archive pour une liste d'archive", docIds.toString(), null);
+		}
 	}
 
 	/**
@@ -297,9 +305,9 @@ public class JournalArchiveService extends AbstractJournalService {
 		try {
 			Journal logArchive = logArchiveDao.findLogArchiveForDocId(docId, isMirror);
 
-			Optional.ofNullable(logArchive.getTimestampTokenBytes()).orElseThrow(
-					() -> new AvpExploitException("518", null, "Récupération du tampon d'horodatage du journal", null,
-							null, String.valueOf(logArchive.getLogId())));
+			Optional.ofNullable(logArchive.getTimestampTokenBytes())
+					.orElseThrow(() -> new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, null,
+							"Récupération du tampon d'horodatage du journal", null, logArchive.getLogId().toString()));
 
 			// Reinitialize the TimestampToken object
 			tamponHorodatageService.initTamponHorodatage(logArchive);
@@ -308,8 +316,12 @@ public class JournalArchiveService extends AbstractJournalService {
 			verifyJournal(logArchive, isMirror);
 
 			return logArchive.getLogId();
-		} catch (PersistenceException | CMSException | TSPException | IOException e) {
-			throw new AvpExploitException("506", e, "Contrôle d'intégrité de journal", null, docId.toString(), null);
+		} catch (CMSException | TSPException | IOException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.CHECK_LOG_TAMPON_ERROR, e,
+					"Initialisation tompon horodatage de journal", docId.toString(), null);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, null,
+					"Recupération du journal d'archive", docId.toString(), null);
 		}
 	}
 
@@ -317,8 +329,9 @@ public class JournalArchiveService extends AbstractJournalService {
 	protected Journal bookLogId() throws AvpExploitException {
 		try {
 			return logArchiveDao.save(new LogArchive());
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("619", e, "Attribution de l'identifiant du journal", null, null, null);
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_LOG_DAO_ERROR, e,
+					"Attribution de l'identifiant du journal", null, null);
 		}
 	}
 
@@ -334,8 +347,8 @@ public class JournalArchiveService extends AbstractJournalService {
 				if (null != logArchive.getTimestampToken().getEncoded())
 					logArchive.setTimestampTokenBytes(logArchive.getTimestampToken().getEncoded());
 			} catch (IOException e) {
-				throw new AvpExploitException("507", e, "Ajout d'une entrée dans le journal des archives", null, null,
-						logArchive.getLogId().toString());
+				throw new AvpExploitException(AvpExploitExceptionCode.SAVE_LOG_BUILD_TAMPON_ERROR, e,
+						"Ajout d'une entrée dans le journal des archives", null, logArchive.getLogId().toString());
 			}
 		} else { // Otherwise use the timestamp of the system
 			logArchive.setHorodatage(ZonedDateTime.now());
@@ -344,10 +357,9 @@ public class JournalArchiveService extends AbstractJournalService {
 		// Persister dans les deux DB l'entity valorise
 		try {
 			logArchiveDao.save(logArchive);
-
-		} catch (PersistenceException e) {
-			throw new AvpExploitException("607", e, "Ajout d'une entrée dans le journal des archives", null, null,
-					logArchive.getLogId().toString());
+		} catch (AvpDaoException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_LOG_DAO_ERROR, e,
+					"Ajout d'une entrée dans le journal des archives", null, logArchive.getLogId().toString());
 		}
 	}
 }
