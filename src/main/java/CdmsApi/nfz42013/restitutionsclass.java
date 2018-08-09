@@ -2,6 +2,7 @@ package CdmsApi.nfz42013;
 
 import java.sql.Connection;
 import java.util.Date;
+
 import CdmsApi.types.TypeJAV;
 
 public class restitutionsclass extends TypeJAV {
@@ -17,35 +18,35 @@ public class restitutionsclass extends TypeJAV {
     }
 
 
+    protected class CLE {
+        public String restitutionid;
+        public final String F = "A005";
+    }
+    protected CLE restitutions_CLE = new CLE();
+
+    protected class PKEY {
+        public String restitutionid;
+        public final String F = "A005";
+    }
+    protected PKEY restitutions_PKEY = new PKEY();
+
     protected class T {
-        public Integer restitutionid;
+        public String restitutionid;
         public String restitutionmotif;
         public String restitutionstatus;
         public String userid;
         public String domnnom;
         public Date horodatage;
         public String destinataire;
-        public final String F = "S005A100A001A012A025T015A200";
+        public final String F = "A005A100A001A012A020T015A200";
     }
     protected T restitutions_T = new T();
 
-    protected class CLE {
-        public Integer restitutionid;
-        public final String F = "S005";
-    }
-    protected CLE restitutions_CLE = new CLE();
-
-    protected class PKEY {
-        public Integer restitutionid;
-        public final String F = "S005";
-    }
-    protected PKEY restitutions_PKEY = new PKEY();
-
-    public  Integer getRestitutionid() {
-        return (Integer) CurrentObjectValues.get("restitutionid");
+    public  String getRestitutionid() {
+        return (String) CurrentObjectValues.get("restitutionid");
     }
 
-    public void setRestitutionid(Integer val) {
+    public void setRestitutionid(String val) {
         setObjectValue (val, "restitutionid");
     }
 
@@ -100,9 +101,9 @@ public class restitutionsclass extends TypeJAV {
     private void initialize () {
         CODOBJ = "restitutions";
         setObjectValue("restitutions","codobj");
-        T = restitutions_T;
         CLE = restitutions_CLE;
         PKEY = restitutions_PKEY;
+        T = restitutions_T;
         DUPLICATE = true;
     }
 }

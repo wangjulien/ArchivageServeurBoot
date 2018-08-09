@@ -26,6 +26,7 @@ import com.telino.avp.entity.context.User;
 import com.telino.avp.entitysyst.SystInitPassword;
 import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
 import com.telino.avp.tools.ServerProc;
@@ -190,46 +191,44 @@ public class UserProfileRightService {
 	 * @param input
 	 * @param resultat
 	 *            les données envoyés dans la requete à la servlet
+	 * @throws AvpExploitException
 	 */
-	public void storePassword(final Map<String, Object> input, final Map<String, Object> resultat) {
-		try {
-			if (ServerProc.password1 == null && input.get("password1") != null) {
-				String password1 = (String) input.get("password1");
+	public void storePassword(final Map<String, Object> input, final Map<String, Object> resultat)
+			throws AvpExploitException {
+		// Save the first server Password
+		if (ServerProc.password1 == null && input.get("password1") != null) {
+			String password1 = (String) input.get("password1");
 
-				ReturnCode codeRetour = checkPasswordServer(1, password1);
+			ReturnCode codeRetour = checkPasswordServer(1, password1);
 
-				if (ReturnCode.OK == codeRetour) {
-					ServerProc.password1 = password1;
-				} else if (ReturnCode.INIT == codeRetour) {
-					updatePasswordServer(1, password1);
-					ServerProc.password1 = password1;
-				} else {
-					resultat.put("codeRetour", ReturnCode.KO.toString());
-					resultat.put("message", "Le mot de passe ne correspond pas");
-					return;
-				}
+			if (ReturnCode.OK == codeRetour) {
+				ServerProc.password1 = password1;
+			} else if (ReturnCode.INIT == codeRetour) {
+				updatePasswordServer(1, password1);
+				ServerProc.password1 = password1;
+			} else {
+				resultat.put("codeRetour", ReturnCode.KO.toString());
+				resultat.put("message", "Le mot de passe ne correspond pas");
+				return;
 			}
+		}
+		
+		// Save the second server Password
+		if (ServerProc.password2 == null && input.get("password2") != null) {
+			String password2 = (String) input.get("password2");
 
-			if (ServerProc.password2 == null && input.get("password2") != null) {
-				String password2 = (String) input.get("password2");
+			ReturnCode codeRetour = checkPasswordServer(2, password2);
 
-				ReturnCode codeRetour = checkPasswordServer(2, password2);
-
-				if (ReturnCode.OK == codeRetour) {
-					ServerProc.password2 = password2;
-				} else if (ReturnCode.INIT == codeRetour) {
-					updatePasswordServer(2, password2);
-					ServerProc.password2 = password2;
-				} else {
-					resultat.put("codeRetour", ReturnCode.KO.toString());
-					resultat.put("message", "Le mot de passe ne correspond pas");
-					return;
-				}
+			if (ReturnCode.OK == codeRetour) {
+				ServerProc.password2 = password2;
+			} else if (ReturnCode.INIT == codeRetour) {
+				updatePasswordServer(2, password2);
+				ServerProc.password2 = password2;
+			} else {
+				resultat.put("codeRetour", ReturnCode.KO.toString());
+				resultat.put("message", "Le mot de passe ne correspond pas");
+				return;
 			}
-		} catch (AvpDaoException e) {
-			LOGGER.error(e.getMessage());
-			resultat.put("codeRetour", "99");
-			resultat.put("message", e.getMessage());
 		}
 	}
 
@@ -240,8 +239,9 @@ public class UserProfileRightService {
 	 * @param id
 	 * @param password
 	 * @return
+	 * @throws AvpExploitException
 	 */
-	private ReturnCode checkPasswordServer(final int id, final String password) {
+	private ReturnCode checkPasswordServer(final int id, final String password) throws AvpExploitException {
 
 		try {
 			Optional<SystInitPassword> initPswOpt = systInitPasswordDao.findById(id);
@@ -256,7 +256,8 @@ public class UserProfileRightService {
 				return ReturnCode.INIT;
 			}
 		} catch (AvpDaoException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			throw new AvpExploitException(, e, "Controler password du serveur");
+			throw new AvpExploitException(AvpExploitExceptionCode.PASSWORD_CHECK_ERROR, e,
+					"Controler password du serveur");
 		}
 	}
 
@@ -266,15 +267,17 @@ public class UserProfileRightService {
 	 * 
 	 * @param id
 	 * @param password
+	 * @throws AvpExploitException
 	 */
-	private void updatePasswordServer(final int id, final String password) {
+	private void updatePasswordServer(final int id, final String password) throws AvpExploitException {
 		try {
 			SystInitPassword initPsw = new SystInitPassword();
 			initPsw.setPasswordId(id);
 			initPsw.setHash(Sha.encode(password, "utf-8"));
 			systInitPasswordDao.save(initPsw);
 		} catch (AvpDaoException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
-			throw new AvpExploitException(, e, "Mettre a jour password du serveur");
+			throw new AvpExploitException(AvpExploitExceptionCode.PASSWORD_UPDATE_ERROR, e,
+					"Mettre a jour password du serveur");
 		}
 
 	}

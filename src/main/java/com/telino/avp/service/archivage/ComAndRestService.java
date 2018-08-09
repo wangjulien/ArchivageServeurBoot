@@ -29,6 +29,7 @@ import com.telino.avp.entity.archive.CommunicationList;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Restitution;
 import com.telino.avp.entity.archive.RestitutionList;
+import com.telino.avp.entity.auxil.LogArchive;
 import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.exception.AvpExploitExceptionCode;
@@ -111,7 +112,7 @@ public class ComAndRestService {
 					Document document = storageService.get(cl.getDocument().getDocId());
 					Map<String, Object> inputDoc = new HashMap<>();
 					inputDoc.put("docid", document.getDocId().toString());
-					inputDoc.put("userid", input.get("user"));
+					inputDoc.put("user", input.get("user"));
 					inputDoc.put("mailid", input.get("mailid"));
 					inputDoc.put("docsname", document.getTitle());
 
@@ -122,25 +123,27 @@ public class ComAndRestService {
 
 					// Archive a attesation for the document
 					Document attestation = storageService.archive("Attestation de copie conforme", document);
-					// Reget the attestation
+					// Reget the attestation since the contenu is crypted
 					attestation = storageService.get(attestation.getDocId());
 					// add to Zip file too
 					addFileToZip(attestation, output);
 
 					// Log the event for archive
-					Map<String, Object> inputToLog = new HashMap<>();
-					inputToLog.put("operation", "Communication d'une archive");
-					inputToLog.put("docid", document.getDocId().toString());
-					inputToLog.put("attestationid", attestation.getDocId().toString());
-					inputToLog.put("userid", input.get("user"));
-					inputToLog.put("mailid", input.get("mailid"));
-					inputToLog.put("docsname", document.getTitle());
-					inputToLog.put("hash", document.getEmpreinte().getEmpreinte());
-					inputToLog.put("logtype", LogArchiveType.A.toString());
-					journalArchiveService.log(inputToLog);
+					LogArchive logArchive = new LogArchive();
+					logArchive.setOperation("Communication d'une archive");
+					logArchive.setDocument(document);
+					logArchive.setAttestation(attestation);
+					logArchive.setUser(Objects.isNull(input.get("user")) ? null
+							: userDao.findByUserId((String) input.get("user")));
+					logArchive.setMailId((String) input.get("mailid"));
+					logArchive.setDocsName(document.getTitle());
+					logArchive.setHash(
+							Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
+					logArchive.setLogType(LogArchiveType.A.toString());
+
+					journalArchiveService.setHorodatageAndSave(logArchive);
 				}
 			}
-
 			LOGGER.debug("Done");
 
 			resultat.put("content", outputContentZip.toByteArray());
@@ -331,23 +334,25 @@ public class ComAndRestService {
 
 				// Archive a attesation for the document
 				Document attestation = storageService.archive("Attestation de pré-restitution", document);
-				// Reget the attestation
+				// Reget the attestation since the contenu is crypted
 				attestation = storageService.get(attestation.getDocId());
 				// add to Zip file too
 				addFileToZip(attestation, output);
 
 				// Log the event for archive
-				Map<String, Object> inputToLog = new HashMap<>();
-				inputToLog.put("operation", "Attestation de pré-restitution");
-				inputToLog.put("docid", document.getDocId().toString());
-				inputToLog.put("attestationid", attestation.getDocId().toString());
-				inputToLog.put("userid", input.get("user"));
-				inputToLog.put("mailid", input.get("mailid"));
-				inputToLog.put("docsname", document.getTitle());
-				inputToLog.put("hash", document.getEmpreinte().getEmpreinte());
-				inputToLog.put("logtype", LogArchiveType.A.toString());
-				journalArchiveService.log(inputToLog);
+				LogArchive logArchive = new LogArchive();
+				logArchive.setOperation("Attestation de pré-restitution");
+				logArchive.setDocument(document);
+				logArchive.setAttestation(attestation);
+				logArchive.setUser(Objects.isNull(input.get("user")) ? null
+						: userDao.findByUserId((String) input.get("user")));
+				logArchive.setMailId((String) input.get("mailid"));
+				logArchive.setDocsName(document.getTitle());
+				logArchive.setHash(
+						Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
+				logArchive.setLogType(LogArchiveType.A.toString());
 
+				journalArchiveService.setHorodatageAndSave(logArchive);
 			}
 			LOGGER.debug("Done");
 
@@ -472,6 +477,9 @@ public class ComAndRestService {
 			restitution.setRestitutionStatus(RestitutionState.V);
 
 			restitutionDao.save(restitution);
+			// Sinc the save above re-persist the documents restaured (delete), we need to re-delete them from DB
+//			restitution.getRestitutionList().forEach(e -> documentDao.deleteMetaDonneesDocument(e.getDocument()));
+			
 		} catch (AvpDaoException e) {
 			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_REST_DAO_ERROR, e,
 					"Valider une restitution et suprimer les documents");

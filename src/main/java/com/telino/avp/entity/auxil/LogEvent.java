@@ -42,7 +42,6 @@ public class LogEvent extends Journal {
 	@JoinColumn(name = "archiveid")
 	private Document archive;
 
-	// TODO : ??? what's "journalid" stand for ?
 	@OneToOne
 	@JoinColumn(name = "journalid")
 	private LogArchive logArchive;

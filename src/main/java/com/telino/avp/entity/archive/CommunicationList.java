@@ -7,6 +7,9 @@ import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
 @Entity
 @Table(name = "communicationlist")
 public class CommunicationList {
@@ -21,6 +24,7 @@ public class CommunicationList {
 
 	@MapsId("docId")
 	@ManyToOne
+	@NotFound(action = NotFoundAction.IGNORE)
 	@JoinColumn(name = "docid")
 	private Document document;
 

@@ -18,8 +18,20 @@ public class log_eventclass extends TypeJAV {
     }
 
 
+    protected class CLE {
+        public String logid;
+        public final String F = "A008";
+    }
+    protected CLE log_event_CLE = new CLE();
+
+    protected class PKEY {
+        public String logid;
+        public final String F = "A008";
+    }
+    protected PKEY log_event_PKEY = new PKEY();
+
     protected class T {
-        public Integer logid;
+        public String logid;
         public String origin;
         public String processus;
         public String action;
@@ -28,30 +40,18 @@ public class log_eventclass extends TypeJAV {
         public String customer_name;
         public String versionprocessus;
         public String operateur;
-        public Integer archiveid;
-        public Integer journalid;
+        public String archiveid;
+        public String journalid;
         public String logtype;
-        public final String F = "S008A060A040A060T015A900A100A006A040E005E005A001";
+        public final String F = "A008A060A040A060T015A900A100A006A040A005A005A001";
     }
     protected T log_event_T = new T();
 
-    protected class CLE {
-        public Integer logid;
-        public final String F = "S008";
-    }
-    protected CLE log_event_CLE = new CLE();
-
-    protected class PKEY {
-        public Integer logid;
-        public final String F = "S008";
-    }
-    protected PKEY log_event_PKEY = new PKEY();
-
-    public  Integer getLogid() {
-        return (Integer) CurrentObjectValues.get("logid");
+    public  String getLogid() {
+        return (String) CurrentObjectValues.get("logid");
     }
 
-    public void setLogid(Integer val) {
+    public void setLogid(String val) {
         setObjectValue (val, "logid");
     }
 
@@ -119,19 +119,19 @@ public class log_eventclass extends TypeJAV {
         setObjectValue (val, "operateur");
     }
 
-    public  Integer getArchiveid() {
-        return (Integer) CurrentObjectValues.get("archiveid");
+    public  String getArchiveid() {
+        return (String) CurrentObjectValues.get("archiveid");
     }
 
-    public void setArchiveid(Integer val) {
+    public void setArchiveid(String val) {
         setObjectValue (val, "archiveid");
     }
 
-    public  Integer getJournalid() {
-        return (Integer) CurrentObjectValues.get("journalid");
+    public  String getJournalid() {
+        return (String) CurrentObjectValues.get("journalid");
     }
 
-    public void setJournalid(Integer val) {
+    public void setJournalid(String val) {
         setObjectValue (val, "journalid");
     }
 
@@ -146,8 +146,8 @@ public class log_eventclass extends TypeJAV {
     private void initialize () {
         CODOBJ = "log_event";
         setObjectValue("log_event","codobj");
-        T = log_event_T;
         CLE = log_event_CLE;
         PKEY = log_event_PKEY;
+        T = log_event_T;
     }
 }

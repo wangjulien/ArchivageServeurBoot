@@ -108,7 +108,6 @@ public class BuildXmlFile {
 			}
 
 		} catch (IOException | ParserConfigurationException | TransformerException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			throw new AvpExploitException(AvpExploitExceptionCode.BUILD_LOG_FILE_ERROR, e,
 					"Invoquer les methods de Journal", null, logData.get("LogID"));

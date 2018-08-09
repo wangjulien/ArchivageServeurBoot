@@ -1,6 +1,7 @@
 package CdmsApi.nfz42013;
 
 import java.sql.Connection;
+
 import CdmsApi.types.TypeJAV;
 
 public class restitutionlistclass extends TypeJAV {
@@ -16,34 +17,34 @@ public class restitutionlistclass extends TypeJAV {
     }
 
 
-    protected class T {
-        public Integer restitutionid;
-        public Integer docid;
-        public String title;
-        public final String F = "S005S008A060";
-    }
-    protected T restitutionlist_T = new T();
-
     protected class CLE {
-        public Integer restitutionid;
-        public Integer docid;
-        public final String F = "S005S008";
+        public String restitutionid;
+        public String docid;
+        public final String F = "A005A008";
     }
     protected CLE restitutionlist_CLE = new CLE();
 
-    public  Integer getRestitutionid() {
-        return (Integer) CurrentObjectValues.get("restitutionid");
+    protected class T {
+        public String restitutionid;
+        public String docid;
+        public String title;
+        public final String F = "A005A008A060";
+    }
+    protected T restitutionlist_T = new T();
+
+    public  String getRestitutionid() {
+        return (String) CurrentObjectValues.get("restitutionid");
     }
 
-    public void setRestitutionid(Integer val) {
+    public void setRestitutionid(String val) {
         setObjectValue (val, "restitutionid");
     }
 
-    public  Integer getDocid() {
-        return (Integer) CurrentObjectValues.get("docid");
+    public  String getDocid() {
+        return (String) CurrentObjectValues.get("docid");
     }
 
-    public void setDocid(Integer val) {
+    public void setDocid(String val) {
         setObjectValue (val, "docid");
     }
 
@@ -58,8 +59,8 @@ public class restitutionlistclass extends TypeJAV {
     private void initialize () {
         CODOBJ = "restitutionlist";
         setObjectValue("restitutionlist","codobj");
-        T = restitutionlist_T;
         CLE = restitutionlist_CLE;
+        T = restitutionlist_T;
         DUPLICATE = true;
     }
 }

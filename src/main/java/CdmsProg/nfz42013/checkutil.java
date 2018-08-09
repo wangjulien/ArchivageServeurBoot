@@ -48,7 +48,6 @@ public class checkutil extends MainObject {
 			try {
 				printLog();
 			} catch (SQLException | AvpExploitException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return false;
 			}
@@ -143,7 +142,6 @@ public class checkutil extends MainObject {
 		try {
 			printLog();
 		} catch (SQLException | AvpExploitException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return false;
 		}

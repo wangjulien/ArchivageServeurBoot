@@ -2,7 +2,6 @@ package com.telino.avp.service.journal;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +97,7 @@ public class JournalArchiveService extends AbstractJournalService {
 	}
 
 	@Override
-	public void log(Map<String, Object> input) throws AvpExploitException {
+	public void log(final Map<String, Object> input) throws AvpExploitException {
 		LogArchive logArchive = new LogArchive();
 
 		if (input.get("logid") != null) {
@@ -181,38 +180,36 @@ public class JournalArchiveService extends AbstractJournalService {
 	}
 
 	@Override
-	protected void traitementPreScellement(List<Document> listArchive) throws AvpExploitException {
+	protected void traitementPreScellement(final List<Document> listArchive, final List<Document> listAttestation)
+			throws AvpExploitException {
 
 		try {
 			// Get all documents ready to be sealed
 			listArchive.addAll(documentDao.getAllDocIdReadyForArchive());
 
 			for (Document doc : listArchive) {
-				Map<String, Object> inputToLog = new HashMap<>();
-
-				String operation = "Attestation de dépôt d'une archive";
-
-				inputToLog.put("operation", operation);
-				inputToLog.put("docid", doc.getDocId().toString());
-
-				// Check the entirety for archive,
+				// Check entirety of the document to seal
 				// An AvpExploitException will be raised if check is not good
 				storageService.check(doc.getDocId(), true);
-
-				inputToLog.put("userid", doc.getArchiverId());
-				inputToLog.put("mailid", doc.getArchiverMail());
-				inputToLog.put("docsname", doc.getTitle());
-				inputToLog.put("logtype", LogArchiveType.A.toString());
-				inputToLog.put("hash", doc.getEmpreinte().getEmpreinte());
-
+				
+				// Create an attestation of depose
+				String operation = "Attestation de dépôt d'une archive";
 				Document attestation = storageService.archive(operation, doc);
-				inputToLog.put("attestationid", attestation.getDocId().toString());
+				// Delete the list when error is thrown
+				listAttestation.add(attestation);
 
-				// TODO : Rollback when error is thrown
-				// List<Document> listAttestation = new ArrayList<>();
-				// listAttestation.add(attestation);
-
-				log(inputToLog);
+				LogArchive logArchive = new LogArchive();
+				logArchive.setOperation(operation);
+				logArchive.setDocument(doc);
+				logArchive.setUser(userDao.findByUserId(doc.getArchiverId()));
+				logArchive.setMailId(doc.getArchiverMail());
+				logArchive.setDocsName(doc.getTitle());
+				logArchive.setLogType(LogArchiveType.A.toString());
+				logArchive.setHash(Objects.isNull(doc.getEmpreinte()) ? "" : doc.getEmpreinte().getEmpreinte());
+				logArchive.setAttestation(attestation);
+				
+				// Persist the LOG
+				setHorodatageAndSave(logArchive);
 			}
 		} catch (AvpDaoException e) {
 			throw new AvpExploitException(AvpExploitExceptionCode.GET_LOG_DAO_ERROR, e,
@@ -252,9 +249,9 @@ public class JournalArchiveService extends AbstractJournalService {
 	}
 
 	@Override
-	protected void traitementPostErreur(final List<Document> attestationList) throws AvpExploitException {
+	protected void traitementPostErreur(final List<Document> listAttestation) throws AvpExploitException {
 
-		for (Document attestation : attestationList) {
+		for (Document attestation : listAttestation) {
 			storageService.delete(attestation);
 		}
 	}

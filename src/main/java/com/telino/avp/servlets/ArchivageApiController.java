@@ -1,6 +1,6 @@
 package com.telino.avp.servlets;
 
-import java.time.ZonedDateTime;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -8,7 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -22,12 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.telino.avp.dao.DepotDao;
-import com.telino.avp.entity.archive.Depot;
-import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
+import com.telino.avp.protocol.DbEntityProtocol.LogEventType;
 import com.telino.avp.service.ArchivageApiService;
 import com.telino.avp.service.SwitchDataSourceService;
 import com.telino.avp.service.journal.JournalEventService;
@@ -43,9 +41,6 @@ public class ArchivageApiController {
 	private String systEnvDsId;
 
 	@Autowired
-	private DepotDao depotDao;
-
-	@Autowired
 	private JournalEventService journalEventService;
 
 	@Autowired
@@ -57,30 +52,27 @@ public class ArchivageApiController {
 	@SuppressWarnings("unchecked")
 	@RequestMapping(method = { RequestMethod.GET, RequestMethod.POST })
 	public void doGetAndPost(@RequestParam("nomBase") String mybase,
-			@RequestParam(value = "environnement", required = false) String environnement,
 			@RequestParam(value = "init", required = false) String init, HttpServletRequest request,
-			HttpServletResponse response) throws Exception {
-
+			HttpServletResponse response) throws IOException {
+		
 		if (Objects.nonNull(mybase)) {
-
-			// Initialization of DS
 			if (Objects.nonNull(init)) {
-
+				// Since the server is stateless, the initialization of DS is inutil
 				Map<String, Object> result = new HashMap<>();
-				try {
-					//
-					// TODO : Switch DataSource par AOP intercepter
-					//
-					switchDataSourceService.switchDataSourceFor(mybase);
-					result.put("codeRetour", ReturnCode.OK.toString());
-
-					LOGGER.info(" Réinit effectué - nfz42013");
-				} catch (AvpExploitException | AvpDaoException e) {
-					LOGGER.error(e.getMessage());
-					result.put("codeRetour", ReturnCode.KO.toString());
-					result.put("message", e.getMessage());
-				}
-
+//				try {
+//					// Switch DataSource
+//					switchDataSourceService.switchDataSourceFor(mybase);
+//					result.put("codeRetour", ReturnCode.OK.toString());
+//
+//					LOGGER.info(" Réinit effectué - nfz42013");
+//				} catch (AvpExploitException e) {
+//					LOGGER.error(e.getMessage());
+//					result.put("codeRetour", ReturnCode.KO.toString());
+//					result.put("message", e.getMessage());
+//				}
+				
+				result.put("codeRetour", ReturnCode.OK.toString());
+				LOGGER.info(" Réinit effectué - nfz42013");
 				CdmsApiServletRequestIO.ecriture(response, result, true);
 				return;
 			}
@@ -102,7 +94,6 @@ public class ArchivageApiController {
 			}
 
 			String demandeur = "";
-
 			if (input instanceof LinkedList) {
 				multi = true;
 				header = ((LinkedList<HashMap<String, Object>>) input).get(0);
@@ -121,67 +112,34 @@ public class ArchivageApiController {
 				header = trame;
 			}
 
-			//
-			// TODO : Switch DataSource par AOP intercepter
-			//
+			// Switch DataSource
 			switchDataSourceService
 					.switchDataSourceFor(header.get("nomBase") == null ? "" : header.get("nomBase").toString());
 
-			Depot depot = null;
-			if (Commande.STORE.toString().equals((String) header.get("command"))) {
-				depot = new Depot();
-				depot.setIdDepot(UUID.randomUUID());
-				depot.setDemandeur(demandeur);
-				depot.setHorodatage(ZonedDateTime.now());
-				depotDao.saveDepot(depot);
-			}
-
+			// Result Map to response
 			Map<String, Object> result = new HashMap<>();
-
+			
+			// multi HasMap in a LinkedList
 			if (multi) {
 				List<HashMap<String, Object>> bigRequest = (LinkedList<HashMap<String, Object>>) input;
 
 				for (int i = 0; i < bigRequest.size(); i++) {
 					trame = bigRequest.get(i);
-					if (Commande.STORE.toString().equals((String) header.get("command")))
-						trame.put("iddepot", depot.getIdDepot().toString());
-
+					
 					// API actions
 					result = archivageApis.execApi(trame);
 
-					if (!ReturnCode.OK.toString().equals((String) result.get("codeRetour"))
-							&& Commande.STORE.toString().equals((String) header.get("command"))) {
-
-						// TODO : rollBack(conn, connMirror, false);
-
-						// Update a Depot object
-						depot.setStatus((String) result.get("codeRetour"));
-						depot.setMessage((String) result.get("message"));
-
-						depotDao.saveDepot(depot);
-
+					if (!ReturnCode.OK.toString().equals((String) result.get("codeRetour"))) {
 						CdmsApiServletRequestIO.ecriture(response, result, isMap);
 						return;
 					}
 				}
 
-				if (Commande.STORE.toString().equals((String) header.get("command"))) {
-					result.put("iddepot", depot.getIdDepot().toString());
-
-					// update a Depot object
-					depot.setStatus(ReturnCode.OK.toString());
-					depot.setMessage(ReturnCode.OK.getDepotMessage());
-
-					depotDao.saveDepot(depot);
-				}
-
 				CdmsApiServletRequestIO.ecriture(response, result, isMap);
-
 			} else {
-				if (Commande.STORE.toString().equals((String) header.get("command")))
-					trame.put("iddepot", depot.getIdDepot().toString());
-
-				// TODO : ??? What's this code for?
+				
+				// Logger command info of the HTTP request,
+				// if there is content, 
 				Map<String, Object> printObject = new HashMap<>();
 				if (trame.containsKey("content")) {
 					Iterator<String> IT = trame.keySet().iterator();
@@ -202,23 +160,6 @@ public class ArchivageApiController {
 
 				CdmsApiServletRequestIO.ecriture(response, result, isMap);
 
-				// TODO : gestion de transaction
-				if (ReturnCode.OK.toString().equals(result.get("codeRetour"))) {
-					// Persist a Depot object
-					if (Commande.STORE.toString().equals((String) header.get("command"))) {
-						depot.setStatus(ReturnCode.OK.toString());
-						depot.setMessage(ReturnCode.OK.getDepotMessage());
-						depotDao.saveDepot(depot);
-					}
-				} else {
-					// Persist a Depot object
-					if (Commande.STORE.toString().equals((String) header.get("command"))) {
-						depot.setStatus((String) result.get("codeRetour"));
-						depot.setMessage((String) result.get("message"));
-						depotDao.saveDepot(depot);
-					}
-				}
-
 				LOGGER.info("Command " + header.get("command") + " ends");
 			}
 
@@ -231,7 +172,7 @@ public class ArchivageApiController {
 			inputToLog1.put("version", "1");
 			inputToLog1.put("processus", Commande.getEnum((String) header.get("command")).getProcess());
 			inputToLog1.put("action", e.getAction());
-			inputToLog1.put("logtype", "E");
+			inputToLog1.put("logtype", LogEventType.E.toString());
 			inputToLog1.put("detail", e.getCodeErreur().getInternalDetail());
 			inputToLog1.put("archiveid", e.getArchiveId());
 			inputToLog1.put("journalid", e.getJournalId());
@@ -254,6 +195,34 @@ public class ArchivageApiController {
 
 			CdmsApiServletRequestIO.ecriture(response, mapResultat, isMap);
 
+		} catch (Exception e) {
+			LOGGER.error("Erreur servlet d'archivage " + e.getMessage());
+			
+			HashMap<String, Object> inputToLog1 = new HashMap<String, Object>();
+			inputToLog1.put("origin", "ADELIS");
+			inputToLog1.put("operateur", "ADELIS");
+			inputToLog1.put("version", "1");
+			inputToLog1.put("processus", header.get("command"));
+			inputToLog1.put("action", this.getClass().toString());
+			inputToLog1.put("logtype", LogEventType.E.toString());
+			inputToLog1.put("detail", e.getMessage());
+			
+			try {
+				journalEventService.log(inputToLog1);
+			} catch (AvpExploitException e1) {
+				LOGGER.error("problème dans logevent : " + e1.getMessage());
+			}
+
+			Map<String, Object> mapResultat = new HashMap<>();
+			mapResultat.put("codeRetour", ReturnCode.KO.toString());
+			mapResultat.put("message", AvpExploitExceptionCode.SYSTEM_ERROR.getExternalDetail());
+			
+			// TaskId pour TaskExploitation
+			if (null != trame.get("taskid"))
+				mapResultat.put("taskid", trame.get("taskid"));
+			
+			CdmsApiServletRequestIO.ecriture(response, mapResultat, isMap);
+			
 		}
 	}
 

@@ -18,35 +18,35 @@ public class communicationsvalidclass extends TypeJAV {
     }
 
 
+    protected class CLE {
+        public String communicationid;
+        public final String F = "A005";
+    }
+    protected CLE communicationsvalid_CLE = new CLE();
+
+    protected class PKEY {
+        public String communicationid;
+        public final String F = "A005";
+    }
+    protected PKEY communicationsvalid_PKEY = new PKEY();
+
     protected class T {
-        public Integer communicationid;
+        public String communicationid;
         public String communicationmotif;
         public String communicationstatus;
         public String userid;
         public String domnnom;
         public Date horodatage;
         public String destinataire;
-        public final String F = "S005A100A001A012A020T015A200";
+        public final String F = "A005A100A001A012A020T015A200";
     }
     protected T communicationsvalid_T = new T();
 
-    protected class CLE {
-        public Integer communicationid;
-        public final String F = "S005";
-    }
-    protected CLE communicationsvalid_CLE = new CLE();
-
-    protected class PKEY {
-        public Integer communicationid;
-        public final String F = "S005";
-    }
-    protected PKEY communicationsvalid_PKEY = new PKEY();
-
-    public  Integer getCommunicationid() {
-        return (Integer) CurrentObjectValues.get("communicationid");
+    public  String getCommunicationid() {
+        return (String) CurrentObjectValues.get("communicationid");
     }
 
-    public void setCommunicationid(Integer val) {
+    public void setCommunicationid(String val) {
         setObjectValue (val, "communicationid");
     }
 
@@ -101,9 +101,8 @@ public class communicationsvalidclass extends TypeJAV {
     private void initialize () {
         CODOBJ = "communicationsvalid";
         setObjectValue("communicationsvalid","codobj");
-        T = communicationsvalid_T;
         CLE = communicationsvalid_CLE;
         PKEY = communicationsvalid_PKEY;
+        T = communicationsvalid_T;
     }
 }
-

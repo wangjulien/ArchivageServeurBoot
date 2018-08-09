@@ -2,6 +2,7 @@ package CdmsApi.nfz42013;
 
 import java.sql.Connection;
 import java.util.Date;
+
 import CdmsApi.types.TypeJAV;
 
 public class log_archiveclass extends TypeJAV {
@@ -17,35 +18,35 @@ public class log_archiveclass extends TypeJAV {
     }
 
 
-    protected class T {
-        public Integer logid;
-        public Date horodatage;
-        public String operation;
-        public String userid;
-        public Integer docid;
-        public String mailid;
-        public String docsname;
-        public final String F = "S008T015A030A012S008@050A200";
-    }
-    protected T log_archive_T = new T();
-
     protected class CLE {
-        public Integer logid;
-        public final String F = "S008";
+        public String logid;
+        public final String F = "A008";
     }
     protected CLE log_archive_CLE = new CLE();
 
     protected class PKEY {
-        public Integer logid;
-        public final String F = "S008";
+        public String logid;
+        public final String F = "A008";
     }
     protected PKEY log_archive_PKEY = new PKEY();
 
-    public  Integer getLogid() {
-        return (Integer) CurrentObjectValues.get("logid");
+    protected class T {
+        public String logid;
+        public Date horodatage;
+        public String operation;
+        public String userid;
+        public String docid;
+        public String mailid;
+        public String docsname;
+        public final String F = "A008T015A030A012A008@050A200";
+    }
+    protected T log_archive_T = new T();
+
+    public  String getLogid() {
+        return (String) CurrentObjectValues.get("logid");
     }
 
-    public void setLogid(Integer val) {
+    public void setLogid(String val) {
         setObjectValue (val, "logid");
     }
 
@@ -73,11 +74,11 @@ public class log_archiveclass extends TypeJAV {
         setObjectValue (val, "userid");
     }
 
-    public  Integer getDocid() {
-        return (Integer) CurrentObjectValues.get("docid");
+    public  String getDocid() {
+        return (String) CurrentObjectValues.get("docid");
     }
 
-    public void setDocid(Integer val) {
+    public void setDocid(String val) {
         setObjectValue (val, "docid");
     }
 
@@ -100,8 +101,8 @@ public class log_archiveclass extends TypeJAV {
     private void initialize () {
         CODOBJ = "log_archive";
         setObjectValue("log_archive","codobj");
-        T = log_archive_T;
         CLE = log_archive_CLE;
         PKEY = log_archive_PKEY;
+        T = log_archive_T;
     }
 }

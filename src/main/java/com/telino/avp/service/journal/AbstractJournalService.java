@@ -48,7 +48,7 @@ public abstract class AbstractJournalService {
 	 *            </ul>
 	 * @throws AvpExploitException
 	 */
-	public abstract void log(Map<String, Object> input) throws AvpExploitException;
+	public abstract void log(final Map<String, Object> input) throws AvpExploitException;
 
 	/**
 	 * Scelle le journal dans Database Master
@@ -56,42 +56,50 @@ public abstract class AbstractJournalService {
 	 * @throws AvpExploitException
 	 */
 	public void scellerJournal() throws AvpExploitException {
-		// List de document sera valorise par Couche Persistence
+		// List de document a archiver sera valorise par Couche Persistence
 		List<Document> listArchive = new ArrayList<>();
-
-		traitementPreScellement(listArchive);
-
-		// For the sack of TIMESTAMP order, We need to make Log of sealling after the
-		// Logs of "attestation d'archive"
+		// List d'attesation de l'archive du doc, pour suppression en cas d'erreur
+		List<Document> listAttestation = new ArrayList<>();
+		
 		try {
-			Thread.sleep(1); // 1 ms
-		} catch (InterruptedException e1) {
-		}
+			traitementPreScellement(listArchive, listAttestation);
 
-		// Persist un nouveau Log
-		Journal journal = bookLogId();
-		// Recupere contenu a sceller depuis Database Master (isMirror = false)
-		journal.setContenu(recupereContenu(journal.getLogId(), false));
+			// For the sack of TIMESTAMP order, We need to make Log of sealling after the
+			// Logs of "attestation d'archive"
+			try {
+				Thread.sleep(1); // 1 ms
+			} catch (InterruptedException e1) {
+			}
 
-		calculeDigest(journal);
+			// Persist un nouveau Log
+			Journal journal = bookLogId();
+			// Recupere contenu a sceller depuis Database Master (isMirror = false)
+			journal.setContenu(recupereContenu(journal.getLogId(), false));
 
-		// Required a Timestamp from Timestamp Organism
-		try {
-			tamponHorodatageService.demanderTamponHorodatage(journal);
+			calculeDigest(journal);
+
+			// Required a Timestamp from Timestamp Organism
+			try {
+				tamponHorodatageService.demanderTamponHorodatage(journal);
+
+				// tamponHorodatageService.verifyTamponHorodatage(journal);
+			} catch (Exception e) {
+				throw new AvpExploitException(AvpExploitExceptionCode.SEAL_LOG_GET_TAMPON_ERROR, e,
+						"Scellement du journal", null, journal.getLogId().toString());
+			}
+
+			// Archivage d'un journal en tant que document
+			Document journalXml = storageService.archive(this, journal);
+
+			// Persiste le log
+			logScellement(journalXml, journal);
+
+			traitementPostScellement(listArchive, journal);
 		} catch (Exception e) {
-			throw new AvpExploitException(AvpExploitExceptionCode.SEAL_LOG_GET_TAMPON_ERROR, e, "Scellement du journal",
-					null, journal.getLogId().toString());
+			// Supprimer les attestation
+			traitementPostErreur(listAttestation);
+			throw e;
 		}
-
-		// TODO : ??? verifyTamponHorodatage(); is needed?
-
-		// Archivage d'un journal en tant que document
-		Document journalXml = storageService.archive(this, journal);
-
-		// Persiste le log
-		logScellement(journalXml, journal);
-
-		traitementPostScellement(listArchive, journal);
 	}
 
 	/**
@@ -168,7 +176,7 @@ public abstract class AbstractJournalService {
 	 * 
 	 * @throws AvpExploitException
 	 */
-	protected abstract void traitementPreScellement(List<Document> listArchive) throws AvpExploitException;
+	protected abstract void traitementPreScellement(List<Document> listArchive, final List<Document> listAttestation) throws AvpExploitException;
 
 	/**
 	 * Effectue le traitement nécessaire une fois le scellement du journal complété
@@ -179,11 +187,11 @@ public abstract class AbstractJournalService {
 			throws AvpExploitException;
 
 	/**
-	 * TODO : Effectue le traitement suite à une erreur de scellement du journal
+	 * Effectue le traitement suite à une erreur de scellement du journal
 	 * 
 	 * @throws AVPExploitException
 	 */
-	protected abstract void traitementPostErreur(final List<Document> attestationList) throws AvpExploitException;
+	protected abstract void traitementPostErreur(final List<Document> listAttestation) throws AvpExploitException;
 
 	/**
 	 * Récupère le contenu du journal à sceller

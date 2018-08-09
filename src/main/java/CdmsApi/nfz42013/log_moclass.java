@@ -2,6 +2,7 @@ package CdmsApi.nfz42013;
 
 import java.sql.Connection;
 import java.util.Date;
+
 import CdmsApi.types.TypeJAV;
 
 public class log_moclass extends TypeJAV {
@@ -17,8 +18,20 @@ public class log_moclass extends TypeJAV {
     }
 
 
+    protected class CLE {
+        public String logid;
+        public final String F = "A008";
+    }
+    protected CLE LOG_MO_CLE = new CLE();
+
+    protected class PKEY {
+        public String logid;
+        public final String F = "A008";
+    }
+    protected PKEY LOG_MO_PKEY = new PKEY();
+
     protected class T {
-        public Integer logid;
+        public String logid;
         public String userid;
         public String mailid;
         public Integer profdroits;
@@ -27,27 +40,15 @@ public class log_moclass extends TypeJAV {
         public String logreason;
         public Date logtime;
         public Boolean logbrisdeglace;
-        public final String F = "S008A030A050E001A020A020A200T015B005";
+        public final String F = "A008A012@050E001A020A020A200T015B005";
     }
     protected T LOG_MO_T = new T();
 
-    protected class PKEY {
-        public Integer logid;
-        public final String F = "S008";
-    }
-    protected PKEY LOG_MO_PKEY = new PKEY();
-
-    protected class CLE {
-        public Integer logid;
-        public final String F = "S008";
-    }
-    protected CLE LOG_MO_CLE = new CLE();
-
-    public  Integer getLogid() {
-        return (Integer) CurrentObjectValues.get("logid");
+    public  String getLogid() {
+        return (String) CurrentObjectValues.get("logid");
     }
 
-    public void setLogid(Integer val) {
+    public void setLogid(String val) {
         setObjectValue (val, "logid");
     }
 
@@ -118,8 +119,8 @@ public class log_moclass extends TypeJAV {
     private void initialize () {
         CODOBJ = "LOG_MO";
         setObjectValue("LOG_MO","codobj");
-        T = LOG_MO_T;
-        PKEY = LOG_MO_PKEY;
         CLE = LOG_MO_CLE;
+        PKEY = LOG_MO_PKEY;
+        T = LOG_MO_T;
     }
 }

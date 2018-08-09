@@ -85,7 +85,7 @@ public class JournalEventService extends AbstractJournalService {
 	}
 
 	@Override
-	public void log(Map<String, Object> input) throws AvpExploitException {
+	public void log(final Map<String, Object> input) throws AvpExploitException {
 		LogEvent logEvent = new LogEvent();
 
 		if (input.get("logid") != null) {
@@ -189,7 +189,7 @@ public class JournalEventService extends AbstractJournalService {
 	}
 
 	@Override
-	protected void traitementPreScellement(List<Document> listArchive) {
+	protected void traitementPreScellement(List<Document> listArchive, final List<Document> listAttestation) {
 
 	}
 
@@ -199,7 +199,7 @@ public class JournalEventService extends AbstractJournalService {
 	}
 
 	@Override
-	protected void traitementPostErreur(final List<Document> attestationList) throws AvpExploitException {
+	protected void traitementPostErreur(final List<Document> listAttestation) throws AvpExploitException {
 
 	}
 

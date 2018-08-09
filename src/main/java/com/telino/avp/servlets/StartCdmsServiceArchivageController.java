@@ -45,9 +45,7 @@ public class StartCdmsServiceArchivageController {
 		try {
 			if (Objects.nonNull(nomBase) && nomBase.length() > 0) {
 
-				//
-				// TODO : Switch DataSource par AOP intercepter
-				//
+				// Switch DataSource
 				switchDataSourceService.switchDataSourceFor(nomBase);
 
 				// lecture de la trame

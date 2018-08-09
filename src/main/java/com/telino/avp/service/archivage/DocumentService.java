@@ -7,6 +7,7 @@ import java.net.URLConnection;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import com.telino.avp.dao.DocumentDao;
 import com.telino.avp.dao.DraftDao;
 import com.telino.avp.dao.ProfileDao;
 import com.telino.avp.dao.UserDao;
+import com.telino.avp.entity.archive.Depot;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Draft;
 import com.telino.avp.entity.archive.EncryptionKey;
@@ -155,7 +157,8 @@ public class DocumentService {
 			LogArchive logArchive = new LogArchive();
 			logArchive.setOperation("Contrôle d'intégrité de l'archive" + input.get("docid").toString());
 			logArchive.setDocument(document);
-			logArchive.setUser(userDao.findByUserId((String) input.get("user")));
+			logArchive.setUser(
+					Objects.isNull(input.get("user")) ? null : userDao.findByUserId((String) input.get("user")));
 			logArchive.setMailId((String) input.get("mailid"));
 			logArchive.setDocsName(document.getTitle());
 			logArchive.setHash(Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
@@ -316,7 +319,11 @@ public class DocumentService {
 		}
 
 		ZonedDateTime minDate = document.getArchiveDate().plus(minDelay, ChronoUnit.MONTHS);
-		ZonedDateTime sDate = ZonedDateTime.parse((String) input.get("archive_end"));
+		// Since the Client doesn't sent a Date in ISO format, we need a customer
+		// formatter
+		String inputEndDate = (String) input.get("archive_end");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[X]");
+		ZonedDateTime sDate = ZonedDateTime.parse(inputEndDate.toString(), formatter);
 
 		if (sDate.isBefore(minDate)) {
 			resultat.put("codeRetour", "13");
@@ -455,6 +462,7 @@ public class DocumentService {
 
 			// Creation of a attestation de suppression
 			Document attestation = storageService.archive(titre, document);
+			// Reget the attestation since the contenu is crypted
 			attestation = storageService.get(attestation.getDocId());
 
 			// Log in LogArchive
@@ -885,6 +893,15 @@ public class DocumentService {
 	 * @throws AvpExploitException
 	 */
 	public void store(final Map<String, Object> input, final Map<String, Object> resultat) throws AvpExploitException {
+
+		// Creation of a Depot
+		Depot depot = new Depot();
+		depot.setIdDepot(UUID.randomUUID());
+		depot.setDemandeur((String) input.get("demandeur"));
+		depot.setHorodatage(ZonedDateTime.now());
+		depotDao.saveDepot(depot);
+		input.put("iddepot", depot.getIdDepot().toString());
+
 		Object content = input.get("content");
 
 		// Flag

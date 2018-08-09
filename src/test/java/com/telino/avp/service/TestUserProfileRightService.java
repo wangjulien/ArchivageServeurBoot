@@ -30,6 +30,7 @@ import com.telino.avp.entity.context.Profile;
 import com.telino.avp.entity.context.Type;
 import com.telino.avp.entity.context.User;
 import com.telino.avp.entitysyst.SystInitPassword;
+import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.service.archivage.UserProfileRightService;
 import com.telino.avp.tools.ServerProc;
 
@@ -156,7 +157,7 @@ public class TestUserProfileRightService {
 	}
 
 	@Test
-	public void store_password() {
+	public void store_password() throws AvpExploitException {
 		ServerProc.password1 = null;
 		ServerProc.password2 = null;
 		

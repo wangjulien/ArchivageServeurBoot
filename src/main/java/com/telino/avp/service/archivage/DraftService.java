@@ -308,112 +308,112 @@ public class DraftService {
 		}
 
 		// !!! deactiver antivirus pour tester
-		try {
-			ProcessBuilder pb = new ProcessBuilder("clamdscan", tmpPath.toString());
-			Process p = pb.start();
-
-			AfficheurFluxExec fluxSortie = new AfficheurFluxExec(p.getInputStream());
-			AfficheurFluxExec fluxErreur = new AfficheurFluxExec(p.getErrorStream());
-			fluxSortie.run();
-			fluxErreur.run();
-
-			if (!(p.waitFor() == 0)) {
-				LOGGER.error("erreur chelou");
-			}
-
-			String result = fluxSortie.getRetour();
-			LOGGER.debug("result :" + result);
-
-			if (result != null && result != "") {
-				LOGGER.debug("result non nul");
-
-				// Scan antivirus
-				Map<String, String> scanAntiVirus = analyseScan(result);
-				if (scanAntiVirus != null) {
-					if (scanAntiVirus.get("nbErrors") != null && !scanAntiVirus.get("nbErrors").equals("0")) {
-						Files.delete(tmpPath);
-						throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_SCAN_ERROR, null,
-								"Scan antivirus du fichier " + input.get("title"));
-					} else if (scanAntiVirus.get("nbInfected") == null
-							|| !scanAntiVirus.get("nbInfected").equals("0")) {
-						Files.delete(tmpPath);
-						throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_INFECTED_ERROR, null,
-								"Scan antivirus du fichier " + input.get("title"));
-					}
-				} else {
-					Files.delete(tmpPath);
-					throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR, null,
-							"Scan antivirus du fichier " + input.get("title"));
-				}
-			} else {
-				Files.delete(tmpPath);
-				throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR,
-						new Exception(fluxErreur.toString()), "Scan antivirus du fichier " + input.get("title"));
-			}
-
-		} catch (IOException | InterruptedException e) {
-			throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR, e,
-					"Scan antivirus du fichier " + input.get("title"));
-		}
+//		try {
+//			ProcessBuilder pb = new ProcessBuilder("clamdscan", tmpPath.toString());
+//			Process p = pb.start();
+//
+//			AfficheurFluxExec fluxSortie = new AfficheurFluxExec(p.getInputStream());
+//			AfficheurFluxExec fluxErreur = new AfficheurFluxExec(p.getErrorStream());
+//			fluxSortie.run();
+//			fluxErreur.run();
+//
+//			if (!(p.waitFor() == 0)) {
+//				LOGGER.error("erreur chelou");
+//			}
+//
+//			String result = fluxSortie.getRetour();
+//			LOGGER.debug("result :" + result);
+//
+//			if (result != null && result != "") {
+//				LOGGER.debug("result non nul");
+//
+//				// Scan antivirus
+//				Map<String, String> scanAntiVirus = analyseScan(result);
+//				if (scanAntiVirus != null) {
+//					if (scanAntiVirus.get("nbErrors") != null && !scanAntiVirus.get("nbErrors").equals("0")) {
+//						Files.delete(tmpPath);
+//						throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_SCAN_ERROR, null,
+//								"Scan antivirus du fichier " + input.get("title"));
+//					} else if (scanAntiVirus.get("nbInfected") == null
+//							|| !scanAntiVirus.get("nbInfected").equals("0")) {
+//						Files.delete(tmpPath);
+//						throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_INFECTED_ERROR, null,
+//								"Scan antivirus du fichier " + input.get("title"));
+//					}
+//				} else {
+//					Files.delete(tmpPath);
+//					throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR, null,
+//							"Scan antivirus du fichier " + input.get("title"));
+//				}
+//			} else {
+//				Files.delete(tmpPath);
+//				throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR,
+//						new Exception(fluxErreur.toString()), "Scan antivirus du fichier " + input.get("title"));
+//			}
+//
+//		} catch (IOException | InterruptedException e) {
+//			throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR, e,
+//					"Scan antivirus du fichier " + input.get("title"));
+//		}
 
 		// Validation of format
-		Format format = null;
-		if (tmpPath.getFileName().toString().equals(input.get("title"))) {
-			ValidatorFactory factory = new ValidatorFactory();
-			Validator v = null;
-			try {
-				try {
-					v = factory.createValidator(tmpPath.toFile());
-				} catch (UnknownFormatException e1) {
-					if ("application/pdf".equals((String) input.get("content_type"))) {
-
-						VeraGreenfieldFoundryProvider.initialise();
-						try (PDFAParser parser = Foundries.defaultInstance()
-								.createParser(new ByteArrayInputStream((byte[]) input.get("content")))) {
-							PDFAValidator validator = Foundries.defaultInstance().createValidator(parser.getFlavour(),
-									false);
-							ValidationResult result = validator.validate(parser);
-							if (!result.isCompliant()) {
-								resultat.put("codeRetour", "4");
-								resultat.put("message", "Le fichier" + input.get("title") + " n'est pas conforme");
-								return;
-							}
-						} catch (NoSuchElementException | ModelParsingException | EncryptedPdfException
-								| ValidationException e) {
-							resultat.put("codeRetour", "4");
-							resultat.put("message", "Le format du fichier " + input.get("title").toString()
-									+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
-							return;
-						}
-
-					} else {
-						resultat.put("codeRetour", "4");
-						resultat.put("message", "Le format du fichier " + input.get("title").toString()
-								+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
-						return;
-					}
-				}
-				format = v.identify();
-				LOGGER.info(tmpPath.getFileName().toString() + " ==> format identifié : " + format + ". Valide ? "
-						+ v.isValid() + " ..." + v.getMessage());
-
-				if (!v.isValid()) {
-					resultat.put("codeRetour", "4");
-					resultat.put("message", "Le fichier " + input.get("title").toString() + "n'est pas valide. ");
-					return;
-				}
-			} catch (IOException | UnknownFormatException e1) {
-				throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e1,
-						"Identification du format du fichier" + input.get("title"));
-			} finally {
-				try {
-					Files.delete(tmpPath);
-				} catch (IOException e) {
-					throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e,
-							"Identification du format du fichier" + input.get("title"));
-				}
-			}
-		}
+//		Format format = null;
+//		if (tmpPath.getFileName().toString().equals(input.get("title"))) {
+//			ValidatorFactory factory = new ValidatorFactory();
+//			Validator v = null;
+//			try {
+//				try {
+//					v = factory.createValidator(tmpPath.toFile());
+//				} catch (UnknownFormatException e1) {
+//					if ("application/pdf".equals((String) input.get("content_type"))) {
+//
+//						VeraGreenfieldFoundryProvider.initialise();
+//						try (PDFAParser parser = Foundries.defaultInstance()
+//								.createParser(new ByteArrayInputStream((byte[]) input.get("content")))) {
+//							PDFAValidator validator = Foundries.defaultInstance().createValidator(parser.getFlavour(),
+//									false);
+//							ValidationResult result = validator.validate(parser);
+//							if (!result.isCompliant()) {
+//								resultat.put("codeRetour", "4");
+//								resultat.put("message", "Le fichier" + input.get("title") + " n'est pas conforme");
+//								return;
+//							}
+//						} catch (NoSuchElementException | ModelParsingException | EncryptedPdfException
+//								| ValidationException e) {
+//							resultat.put("codeRetour", "4");
+//							resultat.put("message", "Le format du fichier " + input.get("title").toString()
+//									+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
+//							return;
+//						}
+//
+//					} else {
+//						resultat.put("codeRetour", "4");
+//						resultat.put("message", "Le format du fichier " + input.get("title").toString()
+//								+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
+//						return;
+//					}
+//				}
+//				format = v.identify();
+//				LOGGER.info(tmpPath.getFileName().toString() + " ==> format identifié : " + format + ". Valide ? "
+//						+ v.isValid() + " ..." + v.getMessage());
+//
+//				if (!v.isValid()) {
+//					resultat.put("codeRetour", "4");
+//					resultat.put("message", "Le fichier " + input.get("title").toString() + "n'est pas valide. ");
+//					return;
+//				}
+//			} catch (IOException | UnknownFormatException e1) {
+//				throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e1,
+//						"Identification du format du fichier" + input.get("title"));
+//			} finally {
+//				try {
+//					Files.delete(tmpPath);
+//				} catch (IOException e) {
+//					throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e,
+//							"Identification du format du fichier" + input.get("title"));
+//				}
+//			}
+//		}
 
 		// Save draft meta data dans les DB
 		Draft draft = new Draft();

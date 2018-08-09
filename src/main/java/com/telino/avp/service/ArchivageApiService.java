@@ -239,26 +239,11 @@ public class ArchivageApiService {
 			break;
 
 		case LOG_EVENT:
-			Map<String, Object> inputToLogEvent = new HashMap<>();
-			inputToLogEvent.put("origin", input.get("origin"));
-			inputToLogEvent.put("operateur", input.get("operateur"));
-			inputToLogEvent.put("version", input.get("versionprocessus"));
-			inputToLogEvent.put("processus", input.get("processus"));
-			inputToLogEvent.put("action", input.get("action"));
-			inputToLogEvent.put("logtype", "E");
-			inputToLogEvent.put("detail", input.get("detail"));
-			journalEventService.log(inputToLogEvent);
+			journalEventService.log(input);
 			break;
 
 		case LOG_ARCHIVE:
-			Map<String, Object> inputToLogArchive = new HashMap<>();
-			inputToLogArchive.put("operation", input.get("operation"));
-			inputToLogArchive.put("docid", input.get("docid"));
-			inputToLogArchive.put("userid", input.get("user"));
-			inputToLogArchive.put("mailid", input.get("mailid"));
-			inputToLogArchive.put("docsname", input.get("docsname"));
-			inputToLogArchive.put("logtype", input.get("logtype"));
-			journalArchiveService.log(inputToLogArchive);
+			journalArchiveService.log(input);
 			break;
 
 		case LOGICAL_DELETE:
@@ -287,9 +272,9 @@ public class ArchivageApiService {
 			if (Objects.isNull(input.get("serviceverseur"))) {
 				resultat.put("codeRetour", "9");
 				resultat.put("message", "Le service verseur est obligatoire");
-
-			} else
+			} else {
 				documentService.store(input, resultat);
+			}
 			break;
 
 		case STORE_DRAFT:
