@@ -305,12 +305,6 @@ public class ComAndRestService {
 
 		Restitution restitution = restitutionDao.findByRestId(UUID.fromString(input.get("restitutionid").toString()));
 
-		// String request = "select a.docid, b.elasticid, b.title " + " from
-		// restitutionlist a "
-		// + "left join document b on a.docid = b.docid "
-		// + "left join restitutions c on a.restitutionid=c.restitutionid where" + "
-		// a.restitutionid = "
-		// + restitutionid;
 		try (ByteArrayOutputStream outputContentZip = new ByteArrayOutputStream();
 				ZipOutputStream output = new ZipOutputStream(outputContentZip)) {
 
@@ -512,6 +506,6 @@ public class ComAndRestService {
 
 	private String addApost(String docIdList) {
 		return Arrays.asList(docIdList.replaceAll("\\s", "").split(",")).stream()
-				.collect(Collectors.joining(",", "'", "'"));
+				.collect(Collectors.joining("','", "'", "'"));
 	}
 }

@@ -80,20 +80,20 @@ public class FsStorageService extends AbstractStorageService {
 		Objects.requireNonNull(appParam.getMirrorStorageParam(),
 				"Mirror FS parametre n'est pas bien configure dans 'param' et 'paramstorage'");
 
-		//
-		// Initialization des unite de stockage, ss
-		// - idStorage est vide et Hostname renseigne
-		//
+		// Only and only if the 2 application passwords are initialized, we can
+		// initialize storage and cryptage
+		if (Objects.nonNull(ServerProc.password1) && Objects.nonNull(ServerProc.password2)) {
+			//
+			// Initialization des unite de stockage, ss
+			// - idStorage est vide et Hostname renseigne
+			//
 
-		// Master storage unit
-		fsprocMaster.init(appParam.getMasterStorageParam());
-		// Mirror storage unit
-		fsprocMirror.init(appParam.getMirrorStorageParam());
-		// Update idStorage parameters
-		paramDao.saveParam(appParam);
-
-		// TODO : why check passwords here ?
-		if (ServerProc.password1 != null && ServerProc.password2 != null) {
+			// Master storage unit
+			fsprocMaster.init(appParam.getMasterStorageParam());
+			// Mirror storage unit
+			fsprocMirror.init(appParam.getMirrorStorageParam());
+			// Update idStorage parameters
+			paramDao.saveParam(appParam);
 
 			// Lire les parametres de appli Param
 			if (appParam.isCryptage()) {

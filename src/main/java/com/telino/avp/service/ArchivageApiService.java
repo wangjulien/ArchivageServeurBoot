@@ -67,15 +67,15 @@ public class ArchivageApiService {
 		if (Commande.STORE_PASSWORD != commande) {
 			if (Objects.isNull(ServerProc.password1) && Objects.isNull(ServerProc.password2)) {
 				resultat.put("codeRetour", "80");
-				resultat.put("message", "");
+				resultat.put("message", "Les deux mots de passe de l'application non initialises");
 				return resultat;
 			} else if (Objects.isNull(ServerProc.password1)) {
 				resultat.put("codeRetour", "81");
-				resultat.put("message", "");
+				resultat.put("message", "Mot de passe 1 de l'application non initialise");
 				return resultat;
 			} else if (Objects.isNull(ServerProc.password2)) {
 				resultat.put("codeRetour", "82");
-				resultat.put("message", "");
+				resultat.put("message", "Mot de passe 2 de l'application non initialise");
 				return resultat;
 			}
 		}
