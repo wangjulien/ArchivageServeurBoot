@@ -97,7 +97,7 @@ public class Document {
 	private String organisationverseuse;
 	private String organisationversante;
 
-	private Boolean logicaldelete;
+	private Boolean logicaldelete = false;
 	private ZonedDateTime logicaldeletedate;
 
 	private String md5;

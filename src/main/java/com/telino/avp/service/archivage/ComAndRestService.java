@@ -19,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.telino.avp.dao.CommunicationDao;
 import com.telino.avp.dao.DocumentDao;
@@ -344,12 +346,12 @@ public class ComAndRestService {
 				logArchive.setOperation("Attestation de pré-restitution");
 				logArchive.setDocument(document);
 				logArchive.setAttestation(attestation);
-				logArchive.setUser(Objects.isNull(input.get("user")) ? null
-						: userDao.findByUserId((String) input.get("user")));
+				logArchive.setUser(
+						Objects.isNull(input.get("user")) ? null : userDao.findByUserId((String) input.get("user")));
 				logArchive.setMailId((String) input.get("mailid"));
 				logArchive.setDocsName(document.getTitle());
-				logArchive.setHash(
-						Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
+				logArchive
+						.setHash(Objects.isNull(document.getEmpreinte()) ? "" : document.getEmpreinte().getEmpreinte());
 				logArchive.setLogType(LogArchiveType.A.toString());
 
 				journalArchiveService.setHorodatageAndSave(logArchive);
@@ -455,7 +457,8 @@ public class ComAndRestService {
 	 * @param resultat
 	 * @throws AvpExploitException
 	 */
-	public void validationRestitution(final Map<String, Object> input, final Map<String, Object> resultat)
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public Restitution validationRestitution(final Map<String, Object> input, final Map<String, Object> resultat)
 			throws AvpExploitException {
 		try {
 			Restitution restitution = restitutionDao.findByRestId(UUID.fromString((String) input.get("restitutionid")));
@@ -475,11 +478,9 @@ public class ComAndRestService {
 			}
 
 			restitution.setRestitutionStatus(RestitutionState.V);
-
 			restitutionDao.save(restitution);
-			// Sinc the save above re-persist the documents restaured (delete), we need to re-delete them from DB
-//			restitution.getRestitutionList().forEach(e -> documentDao.deleteMetaDonneesDocument(e.getDocument()));
-			
+
+			return restitution;
 		} catch (AvpDaoException e) {
 			throw new AvpExploitException(AvpExploitExceptionCode.SAVE_REST_DAO_ERROR, e,
 					"Valider une restitution et suprimer les documents");

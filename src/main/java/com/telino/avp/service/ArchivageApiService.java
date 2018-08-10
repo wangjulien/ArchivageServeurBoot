@@ -5,12 +5,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.telino.avp.entity.archive.Communication;
+import com.telino.avp.entity.archive.Restitution;
+import com.telino.avp.entity.archive.RestitutionList;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.AvpProtocol.Commande;
 import com.telino.avp.protocol.AvpProtocol.ReturnCode;
@@ -299,7 +302,11 @@ public class ArchivageApiService {
 			break;
 
 		case VALIDATION_RESTITUTION:
-			comAndRestService.validationRestitution(input, resultat);
+			Restitution valideResitution = comAndRestService.validationRestitution(input, resultat);
+			// Sinc the save above re-persist the documents restaured (delete), we need to
+			// re-delete them from DB
+			documentService.deleteMetaData(valideResitution.getRestitutionList().stream()
+					.map(RestitutionList::getDocument).collect(Collectors.toList()));
 			break;
 
 		default:
