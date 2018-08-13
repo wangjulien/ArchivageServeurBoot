@@ -129,8 +129,8 @@ public class DraftDao {
 	 */
 	public Draft mapValues(final Draft draft, final Map<String, Object> input) {
 
-		if (input.get("userid") != null)
-			draft.setUserid((String) input.get("userid"));
+		if (input.get("user") != null)
+			draft.setUserid((String) input.get("user"));
 		if (input.get("content") != null)
 			draft.setContent((byte[]) input.get("content"));
 		if (input.get("doctype") != null)

@@ -1,21 +1,19 @@
 package com.telino.avp.service.archivage;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -23,14 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.verapdf.core.EncryptedPdfException;
-import org.verapdf.core.ModelParsingException;
-import org.verapdf.core.ValidationException;
-import org.verapdf.pdfa.Foundries;
-import org.verapdf.pdfa.PDFAParser;
-import org.verapdf.pdfa.PDFAValidator;
-import org.verapdf.pdfa.VeraGreenfieldFoundryProvider;
-import org.verapdf.pdfa.results.ValidationResult;
 
 import com.telino.avp.dao.DraftDao;
 import com.telino.avp.entity.archive.Draft;
@@ -39,12 +29,7 @@ import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.DbEntityProtocol.DraftStatut;
 import com.telino.avp.service.journal.TamponHorodatageService;
-import com.telino.avp.tools.AfficheurFluxExec;
 
-import fr.cines.Format;
-import fr.cines.format.validator.UnknownFormatException;
-import fr.cines.format.validator.Validator;
-import fr.cines.validator.ValidatorFactory;
 import tools.ApercuManager;
 
 @Service
@@ -92,29 +77,14 @@ public class DraftService {
 	 * @throws AvpExploitException
 	 */
 	public void refusDraft(final Map<String, Object> input) throws AvpExploitException {
-		List<UUID> draftDocIds = null;
-
-		// one draft or a list of drafts
-		if (Objects.nonNull(input.get("docid")))
-			draftDocIds = Arrays.asList(UUID.fromString(input.get("docid").toString()));
-		else if (Objects.nonNull(input.get("idlist")) && !input.get("idlist").toString().isEmpty()) {
-			// a list of drafts separated by ','
-			draftDocIds = Arrays.asList((input.get("idlist").toString().replaceAll("\\s", "").split(","))).stream()
-					.map(UUID::fromString).collect(Collectors.toList());
-		}
-
 		try {
-			Objects.requireNonNull(draftDocIds, "input doesn't contain any docId : " + input);
-			List<Draft> drafts = draftDao.findAllByDocId(draftDocIds);
-			drafts.forEach(d -> {
+			updateDraftByLambda(input, d -> {
 				d.setTransmis(false);
 				d.setMotif(input.get("motif").toString());
 				d.setStatut(DraftStatut.REFUSED.toString());
 				d.setDraftdate(ZonedDateTime.now());
 			});
 
-			// Persistenc the Update
-			draftDao.saveAll(drafts);
 		} catch (AvpDaoException | NullPointerException e) {
 			throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_REFUSE_ERROR, e, "Refuser un draft");
 		}
@@ -125,36 +95,13 @@ public class DraftService {
 	 * @throws AvpExploitException
 	 */
 	public void updateDraft(final Map<String, Object> input) throws AvpExploitException {
-		// Create of Draft object according to Input Map
-		List<Draft> drafts = new ArrayList<>();
-
-		// one draft or a list of drafts
-		if (Objects.nonNull(input.get("idlist")) && !input.get("idlist").toString().isEmpty()) {
-			// a list of drafts separated by ','
-			List<UUID> draftDocIds = Arrays.asList((input.get("idlist").toString().replaceAll("\\s", "").split(",")))
-					.stream().map(UUID::fromString).collect(Collectors.toList());
-
-			for (UUID draftId : draftDocIds) {
-				Draft draftUnitaire = new Draft();
-				draftUnitaire.setDocId(draftId);
-
-				draftDao.mapValues(draftUnitaire, input);
-				draftUnitaire.setDraftdate(ZonedDateTime.now());
-				drafts.add(draftUnitaire);
-			}
-		} else if (Objects.nonNull(input.get("docid"))) {
-			Draft draftUnitaire = new Draft();
-			draftUnitaire.setDocId(UUID.fromString((String) input.get("docid")));
-
-			draftDao.mapValues(draftUnitaire, input);
-			draftUnitaire.setDraftdate(ZonedDateTime.now());
-			drafts.add(draftUnitaire);
-		}
-
 		try {
-			// Persistence of all drafts
-			draftDao.saveAll(drafts);
-		} catch (AvpDaoException e) {
+			updateDraftByLambda(input, d -> {
+				draftDao.mapValues(d, input);
+				d.setDraftdate(ZonedDateTime.now());
+			});
+
+		} catch (AvpDaoException | NullPointerException e) {
 			throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_SAVE_ERROR, e, "Mettre a jour un draft");
 		}
 	}
@@ -164,6 +111,23 @@ public class DraftService {
 	 * @throws AvpExploitException
 	 */
 	public void valideDraft(final Map<String, Object> input) throws AvpExploitException {
+
+		try {
+			updateDraftByLambda(input, d -> {
+				d.setTransmis(true);
+				d.setMotif("Transmis");
+				d.setStatut(DraftStatut.TRANSMIS.toString());
+				d.setDraftdate(ZonedDateTime.now());
+			});
+
+		} catch (AvpDaoException | NullPointerException e) {
+			throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_SAVE_ERROR, e, "Valider un draft");
+		}
+
+	}
+
+	private void updateDraftByLambda(final Map<String, Object> input, final Consumer<Draft> draftUpdateFn)
+			throws AvpDaoException, NullPointerException {
 		List<UUID> draftDocIds = null;
 
 		// one draft or a list of drafts
@@ -175,23 +139,13 @@ public class DraftService {
 					.map(UUID::fromString).collect(Collectors.toList());
 		}
 
-		try {
-			Objects.requireNonNull(draftDocIds, "input doesn't contain any docId : " + input);
-			// Get all the draft for modification
-			List<Draft> drafts = draftDao.findAllByDocId(draftDocIds);
-			drafts.forEach(d -> {
-				d.setTransmis(true);
-				d.setMotif("Transmis");
-				d.setStatut(DraftStatut.TRANSMIS.toString());
-				d.setDraftdate(ZonedDateTime.now());
-			});
+		Objects.requireNonNull(draftDocIds, "input doesn't contain any docId : " + input);
+		// Get all the draft for modification
+		List<Draft> drafts = draftDao.findAllByDocId(draftDocIds);
+		drafts.forEach(draftUpdateFn);
 
-			// Persistenc the Update
-			draftDao.saveAll(drafts);
-		} catch (AvpDaoException | NullPointerException e) {
-			throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_SAVE_ERROR, e, "Valider un draft");
-		}
-
+		// Persistenc the Update
+		draftDao.saveAll(drafts);
 	}
 
 	/**
@@ -206,16 +160,9 @@ public class DraftService {
 			Draft draft = draftDao.get(docId);
 
 			resultat.put("docid", draft.getDocId().toString());
+			// Convert to Date for the sack of GWT Front
 			resultat.put("draftdate",
-					Objects.isNull(draft.getDraftdate()) ? null : Date.from(draft.getDraftdate().toInstant())); // Convert
-																												// to
-																												// Date
-																												// for
-																												// the
-																												// sack
-																												// of
-																												// GWT
-																												// Front
+					Objects.isNull(draft.getDraftdate()) ? null : Date.from(draft.getDraftdate().toInstant()));
 			resultat.put("doctype", draft.getDoctype());
 			resultat.put("categorie", draft.getCategorie());
 			resultat.put("title", draft.getTitle());
@@ -308,112 +255,133 @@ public class DraftService {
 		}
 
 		// !!! deactiver antivirus pour tester
-//		try {
-//			ProcessBuilder pb = new ProcessBuilder("clamdscan", tmpPath.toString());
-//			Process p = pb.start();
-//
-//			AfficheurFluxExec fluxSortie = new AfficheurFluxExec(p.getInputStream());
-//			AfficheurFluxExec fluxErreur = new AfficheurFluxExec(p.getErrorStream());
-//			fluxSortie.run();
-//			fluxErreur.run();
-//
-//			if (!(p.waitFor() == 0)) {
-//				LOGGER.error("erreur chelou");
-//			}
-//
-//			String result = fluxSortie.getRetour();
-//			LOGGER.debug("result :" + result);
-//
-//			if (result != null && result != "") {
-//				LOGGER.debug("result non nul");
-//
-//				// Scan antivirus
-//				Map<String, String> scanAntiVirus = analyseScan(result);
-//				if (scanAntiVirus != null) {
-//					if (scanAntiVirus.get("nbErrors") != null && !scanAntiVirus.get("nbErrors").equals("0")) {
-//						Files.delete(tmpPath);
-//						throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_SCAN_ERROR, null,
-//								"Scan antivirus du fichier " + input.get("title"));
-//					} else if (scanAntiVirus.get("nbInfected") == null
-//							|| !scanAntiVirus.get("nbInfected").equals("0")) {
-//						Files.delete(tmpPath);
-//						throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_INFECTED_ERROR, null,
-//								"Scan antivirus du fichier " + input.get("title"));
-//					}
-//				} else {
-//					Files.delete(tmpPath);
-//					throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR, null,
-//							"Scan antivirus du fichier " + input.get("title"));
-//				}
-//			} else {
-//				Files.delete(tmpPath);
-//				throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR,
-//						new Exception(fluxErreur.toString()), "Scan antivirus du fichier " + input.get("title"));
-//			}
-//
-//		} catch (IOException | InterruptedException e) {
-//			throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR, e,
-//					"Scan antivirus du fichier " + input.get("title"));
-//		}
+		// try {
+		// ProcessBuilder pb = new ProcessBuilder("clamdscan", tmpPath.toString());
+		// Process p = pb.start();
+		//
+		// AfficheurFluxExec fluxSortie = new AfficheurFluxExec(p.getInputStream());
+		// AfficheurFluxExec fluxErreur = new AfficheurFluxExec(p.getErrorStream());
+		// fluxSortie.run();
+		// fluxErreur.run();
+		//
+		// if (!(p.waitFor() == 0)) {
+		// LOGGER.error("erreur chelou");
+		// }
+		//
+		// String result = fluxSortie.getRetour();
+		// LOGGER.debug("result :" + result);
+		//
+		// if (result != null && result != "") {
+		// LOGGER.debug("result non nul");
+		//
+		// // Scan antivirus
+		// Map<String, String> scanAntiVirus = analyseScan(result);
+		// if (scanAntiVirus != null) {
+		// if (scanAntiVirus.get("nbErrors") != null &&
+		// !scanAntiVirus.get("nbErrors").equals("0")) {
+		// Files.delete(tmpPath);
+		// throw new
+		// AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_SCAN_ERROR,
+		// null,
+		// "Scan antivirus du fichier " + input.get("title"));
+		// } else if (scanAntiVirus.get("nbInfected") == null
+		// || !scanAntiVirus.get("nbInfected").equals("0")) {
+		// Files.delete(tmpPath);
+		// throw new
+		// AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_INFECTED_ERROR,
+		// null,
+		// "Scan antivirus du fichier " + input.get("title"));
+		// }
+		// } else {
+		// Files.delete(tmpPath);
+		// throw new
+		// AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR,
+		// null,
+		// "Scan antivirus du fichier " + input.get("title"));
+		// }
+		// } else {
+		// Files.delete(tmpPath);
+		// throw new
+		// AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR,
+		// new Exception(fluxErreur.toString()), "Scan antivirus du fichier " +
+		// input.get("title"));
+		// }
+		//
+		// } catch (IOException | InterruptedException e) {
+		// throw new
+		// AvpExploitException(AvpExploitExceptionCode.DRAFT_ANTI_VIRUS_EXEC_ERROR, e,
+		// "Scan antivirus du fichier " + input.get("title"));
+		// }
 
 		// Validation of format
-//		Format format = null;
-//		if (tmpPath.getFileName().toString().equals(input.get("title"))) {
-//			ValidatorFactory factory = new ValidatorFactory();
-//			Validator v = null;
-//			try {
-//				try {
-//					v = factory.createValidator(tmpPath.toFile());
-//				} catch (UnknownFormatException e1) {
-//					if ("application/pdf".equals((String) input.get("content_type"))) {
-//
-//						VeraGreenfieldFoundryProvider.initialise();
-//						try (PDFAParser parser = Foundries.defaultInstance()
-//								.createParser(new ByteArrayInputStream((byte[]) input.get("content")))) {
-//							PDFAValidator validator = Foundries.defaultInstance().createValidator(parser.getFlavour(),
-//									false);
-//							ValidationResult result = validator.validate(parser);
-//							if (!result.isCompliant()) {
-//								resultat.put("codeRetour", "4");
-//								resultat.put("message", "Le fichier" + input.get("title") + " n'est pas conforme");
-//								return;
-//							}
-//						} catch (NoSuchElementException | ModelParsingException | EncryptedPdfException
-//								| ValidationException e) {
-//							resultat.put("codeRetour", "4");
-//							resultat.put("message", "Le format du fichier " + input.get("title").toString()
-//									+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
-//							return;
-//						}
-//
-//					} else {
-//						resultat.put("codeRetour", "4");
-//						resultat.put("message", "Le format du fichier " + input.get("title").toString()
-//								+ " est inconnu ou ne peut être déterminé car ne respectant pas les conventions. ");
-//						return;
-//					}
-//				}
-//				format = v.identify();
-//				LOGGER.info(tmpPath.getFileName().toString() + " ==> format identifié : " + format + ". Valide ? "
-//						+ v.isValid() + " ..." + v.getMessage());
-//
-//				if (!v.isValid()) {
-//					resultat.put("codeRetour", "4");
-//					resultat.put("message", "Le fichier " + input.get("title").toString() + "n'est pas valide. ");
-//					return;
-//				}
-//			} catch (IOException | UnknownFormatException e1) {
-//				throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e1,
-//						"Identification du format du fichier" + input.get("title"));
-//			} finally {
-//				try {
-//					Files.delete(tmpPath);
-//				} catch (IOException e) {
-//					throw new AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e,
-//							"Identification du format du fichier" + input.get("title"));
-//				}
-//			}
-//		}
+		// Format format = null;
+		// if (tmpPath.getFileName().toString().equals(input.get("title"))) {
+		// ValidatorFactory factory = new ValidatorFactory();
+		// Validator v = null;
+		// try {
+		// try {
+		// v = factory.createValidator(tmpPath.toFile());
+		// } catch (UnknownFormatException e1) {
+		// if ("application/pdf".equals((String) input.get("content_type"))) {
+		//
+		// VeraGreenfieldFoundryProvider.initialise();
+		// try (PDFAParser parser = Foundries.defaultInstance()
+		// .createParser(new ByteArrayInputStream((byte[]) input.get("content")))) {
+		// PDFAValidator validator =
+		// Foundries.defaultInstance().createValidator(parser.getFlavour(),
+		// false);
+		// ValidationResult result = validator.validate(parser);
+		// if (!result.isCompliant()) {
+		// resultat.put("codeRetour", "4");
+		// resultat.put("message", "Le fichier" + input.get("title") + " n'est pas
+		// conforme");
+		// return;
+		// }
+		// } catch (NoSuchElementException | ModelParsingException |
+		// EncryptedPdfException
+		// | ValidationException e) {
+		// resultat.put("codeRetour", "4");
+		// resultat.put("message", "Le format du fichier " +
+		// input.get("title").toString()
+		// + " est inconnu ou ne peut être déterminé car ne respectant pas les
+		// conventions. ");
+		// return;
+		// }
+		//
+		// } else {
+		// resultat.put("codeRetour", "4");
+		// resultat.put("message", "Le format du fichier " +
+		// input.get("title").toString()
+		// + " est inconnu ou ne peut être déterminé car ne respectant pas les
+		// conventions. ");
+		// return;
+		// }
+		// }
+		// format = v.identify();
+		// LOGGER.info(tmpPath.getFileName().toString() + " ==> format identifié : " +
+		// format + ". Valide ? "
+		// + v.isValid() + " ..." + v.getMessage());
+		//
+		// if (!v.isValid()) {
+		// resultat.put("codeRetour", "4");
+		// resultat.put("message", "Le fichier " + input.get("title").toString() +
+		// "n'est pas valide. ");
+		// return;
+		// }
+		// } catch (IOException | UnknownFormatException e1) {
+		// throw new
+		// AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e1,
+		// "Identification du format du fichier" + input.get("title"));
+		// } finally {
+		// try {
+		// Files.delete(tmpPath);
+		// } catch (IOException e) {
+		// throw new
+		// AvpExploitException(AvpExploitExceptionCode.DRAFT_FORMAT_VALIDE_ERROR, e,
+		// "Identification du format du fichier" + input.get("title"));
+		// }
+		// }
+		// }
 
 		// Save draft meta data dans les DB
 		Draft draft = new Draft();

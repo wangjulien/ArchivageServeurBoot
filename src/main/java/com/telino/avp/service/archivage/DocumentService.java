@@ -744,12 +744,10 @@ public class DocumentService {
 			resultat.put("content_type", doc.getContentType());
 			resultat.put("content_length",
 					Objects.isNull(doc.getContentLength()) ? "" : doc.getContentLength().intValue());
-			resultat.put("archive_date", Date.from(doc.getArchiveDate().toInstant())); // Convert to Date for the sack
-																						// of
-																						// GWT Front
-			resultat.put("archive_end", Date.from(doc.getArchiveEnd().toInstant())); // Convert to Date for the sack of
-																						// GWT
-																						// Front
+			// Convert to Date for the sack of GWT Front
+			resultat.put("archive_date", Date.from(doc.getArchiveDate().toInstant()));
+			// Convert to Date for the sack of GWT Front
+			resultat.put("archive_end", Date.from(doc.getArchiveEnd().toInstant())); 
 			resultat.put("application", doc.getApplication());
 			resultat.put("keywords",
 					Objects.isNull(doc.getKeywords()) ? "" : doc.getKeywords().replaceAll("<", "").replaceAll(">", ""));
@@ -821,12 +819,10 @@ public class DocumentService {
 				ligne.put("content_type", kw.getContentType());
 				ligne.put("content_length",
 						Objects.isNull(kw.getContentLength()) ? 0 : kw.getContentLength().intValue());
-				ligne.put("archive_date", Date.from(kw.getArchiveDate().toInstant())); // Convert to Date for the sack
-																						// of
-																						// GWT Front
-				ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); // Convert to Date for the sack of
-																						// GWT
-																						// Front
+				// Convert to Date for the sack of GWT Front
+				ligne.put("archive_date", Date.from(kw.getArchiveDate().toInstant())); 
+				// Convert to Date for the sack of GWT Front
+				ligne.put("archive_end", Date.from(kw.getArchiveEnd().toInstant())); 
 				ligne.put("application", kw.getApplication());
 				ligne.put("archiver_mail", kw.getArchiverMail());
 				ligne.put("par_id", Objects.isNull(kw.getProfile()) ? 0 : kw.getProfile().getParId());
