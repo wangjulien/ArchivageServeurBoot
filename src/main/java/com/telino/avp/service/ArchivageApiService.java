@@ -306,6 +306,7 @@ public class ArchivageApiService {
 			// Sinc the save above re-persist the documents restaured (delete), we need to
 			// re-delete them from DB
 			documentService.deleteMetaData(valideResitution.getRestitutionList().stream()
+					.filter(RestitutionList::isRestitue)
 					.map(RestitutionList::getDocument).collect(Collectors.toList()));
 			break;
 
