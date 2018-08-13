@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Base64;
@@ -139,15 +141,14 @@ public class TestDocumentService {
 		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 
 		// All goes well
-//		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(true);
 		when(documentDao.get(TestConstants.TEST_DOC_ID, false)).thenReturn(new Document());
 
 		documentService.control(input);
 
-		verify(journalArchiveService).log(anyMap());
+		verify(journalArchiveService).setHorodatageAndSave(any(LogArchive.class));
 
 		// If Check file by Storage goes wrong
-//		when(storageService.check(TestConstants.TEST_DOC_ID, false)).thenReturn(false);
+		doThrow(AvpExploitException.class).when(storageService).check(TestConstants.TEST_DOC_ID, false);
 		documentService.control(input);
 	}
 
@@ -170,11 +171,12 @@ public class TestDocumentService {
 	public void delay() throws AvpExploitException {
 		ZonedDateTime nowFixed = ZonedDateTime.now();
 		ZonedDateTime newEndDate = nowFixed.plus(1, ChronoUnit.MONTHS);
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss[X]");
 
 		input.clear();
 		input.put("docid", TestConstants.TEST_DOC_ID.toString());
 		input.put("user", USER_ID);
-		input.put("archive_end", newEndDate.toString());
+		input.put("archive_end", newEndDate.format(formatter));
 
 		// When achievement end date is smaller than minimum conserved date
 		Document document = new Document();
@@ -197,15 +199,15 @@ public class TestDocumentService {
 
 		// otherwise try with 10 monthes
 		newEndDate = nowFixed.plus(10, ChronoUnit.MONTHS);
-		input.put("archive_end", newEndDate.toString());
+		input.put("archive_end", newEndDate.format(formatter));
 		resultat.clear();
 		documentService.delay(input, resultat);
 
 		assertTrue(resultat.isEmpty());
-		assertTrue(document.getArchiveEnd().isEqual(newEndDate));
+		assertTrue(document.getArchiveEnd().isEqual(ZonedDateTime.parse(newEndDate.format(formatter), formatter)));
 
 		verify(documentDao).saveMetaDonneesDocument(document);
-		verify(journalArchiveService).log(anyMap());
+		verify(journalArchiveService).setHorodatageAndSave(any(LogArchive.class));
 	}
 
 	@Test
@@ -225,7 +227,6 @@ public class TestDocumentService {
 
 		when(documentDao.get(any(UUID.class), eq(false))).thenReturn(document);
 		when(userProfileRightService.canDoThePredict(eq(1), eq(USER_ID), any())).thenReturn(true);
-//		when(storageService.delete(document)).thenReturn(true);
 
 		//
 		// simulate the NeoGed return info
@@ -258,7 +259,7 @@ public class TestDocumentService {
 
 		verify(storageService, times(3)).archive(anyString(), eq(document));
 		verify(storageService, times(3)).get(document.getDocId());
-		verify(journalArchiveService, times(3)).log(anyMap());
+		verify(journalArchiveService, times(3)).setHorodatageAndSave(any(LogArchive.class));
 	}
 
 	@Test
@@ -290,7 +291,7 @@ public class TestDocumentService {
 		assertEquals(Base64.getEncoder().encodeToString("Test content".getBytes()), (String) resultat.get("content"));
 
 		verify(storageService).get(TestConstants.TEST_DOC_ID);
-		verify(journalArchiveService).log(anyMap());
+		verify(journalArchiveService).setHorodatageAndSave(any(LogArchive.class));
 	}
 
 	@Test
@@ -422,7 +423,7 @@ public class TestDocumentService {
 		MimeType mimeType = new MimeType();
 		mimeType.setContentType("application/octet-stream");
 		docType.addMimeType(mimeType);
-		
+
 		DocType docType2 = new DocType();
 		docType2.setDocTypeArchivage(new Type());
 
@@ -498,7 +499,7 @@ public class TestDocumentService {
 		draft.setContentType("application/octet-stream");
 		draft.setContent("Test content".getBytes());
 		draft.setContentLength(10);
-		
+
 		when(draftDao.get(TestConstants.TEST_DOC_ID)).thenReturn(draft);
 
 		resultat.clear();

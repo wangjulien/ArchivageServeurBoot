@@ -156,7 +156,7 @@ public class TestFsProcRemote {
 		try {
 			fsProcRemote.getFile("sha1Unique");
 		} catch (AvpExploitException e) {
-			assertEquals("511", e.getMessage());
+			assertEquals(AvpExploitExceptionCode.STORAGE_INPUT_LACK_PRINT, e.getCodeErreur());
 		}
 
 		verify(remoteCall, times(3)).callServletWithJsonObject(any(JSONObject.class), anyString());

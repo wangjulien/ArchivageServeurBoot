@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +41,7 @@ import com.telino.avp.entity.archive.Empreinte;
 import com.telino.avp.entity.archive.EncryptionKey;
 import com.telino.avp.entity.param.Param;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.protocol.AvpProtocol.FileReturnError;
 import com.telino.avp.service.archivage.DocumentService;
 import com.telino.avp.service.storage.FSProc;
@@ -127,9 +129,6 @@ public class TestFsStorageService {
 		}).when(documentDao).fillEmpreinteUnique(document);
 
 		// test all goes well
-		// when(fsprocMirror.writeFile(anyString(), anyString())).thenReturn(true);
-		// when(fsprocMaster.writeFile(anyString(), anyString())).thenReturn(true);
-
 		fsStorageService.archive(document);
 
 		assertEquals("Internal Telino print", document.getEmpreinte().getEmpreinteInterne());
@@ -140,10 +139,14 @@ public class TestFsStorageService {
 
 		// When error
 		document.setContent("Test content".getBytes());
-//		when(fsprocMaster.writeFile(anyString(), anyString()))
-//				.thenThrow(new AvpExploitException(AvpExploitExceptionCode.STORAGE_WRITE_ERROR, null, null));
+		doThrow(new AvpExploitException(AvpExploitExceptionCode.STORAGE_WRITE_ERROR, null, null))
+		.when(fsprocMaster).writeFile(anyString(), anyString());
 
-		fsStorageService.archive(document);
+		try {
+			fsStorageService.archive(document);
+		} catch (AvpExploitException e) {
+			assertEquals(AvpExploitExceptionCode.STORAGE_WRITE_ERROR, e.getCodeErreur());
+		}
 
 		verify(chiffrementDao, times(2)).findChiffrementByCrytId(CRYPTAGE_ID);
 		verify(fsprocMaster, times(2)).writeFile(anyString(), anyString());
@@ -160,7 +163,6 @@ public class TestFsStorageService {
 
 		verify(fsprocMirror).deleteFile("Unique print");
 		verify(fsprocMaster).deleteFile("Unique print");
-		verify(documentDao).deleteMetaDonneesDocument(document);
 	}
 
 	@Test

@@ -28,6 +28,7 @@ import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Empreinte;
 import com.telino.avp.entity.archive.Restitution;
 import com.telino.avp.entity.archive.RestitutionList;
+import com.telino.avp.entity.auxil.LogArchive;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.protocol.DbEntityProtocol.CommunicationState;
 import com.telino.avp.service.archivage.ComAndRestService;
@@ -127,7 +128,7 @@ public class TestComAndRestService {
 		verify(storageService).archive(anyString(), eq(doc));
 		verify(storageService).get(attestation.getDocId());
 		verify(documentService).control(any(Map.class));
-		verify(journalArchiveService).log(any(Map.class));
+		verify(journalArchiveService).setHorodatageAndSave(any(LogArchive.class));
 	}
 	
 	
@@ -150,7 +151,7 @@ public class TestComAndRestService {
 		verify(storageService).archive(anyString(), eq(doc));
 		verify(storageService).get(attestation.getDocId());
 		verify(documentService).control(any(Map.class));
-		verify(journalArchiveService).log(any(Map.class));
+		verify(journalArchiveService).setHorodatageAndSave(any(LogArchive.class));
 	}
 
 }

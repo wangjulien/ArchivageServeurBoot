@@ -23,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.telino.avp.dao.DraftDao;
 import com.telino.avp.entity.archive.Draft;
 import com.telino.avp.exception.AvpExploitException;
+import com.telino.avp.exception.AvpExploitExceptionCode;
 import com.telino.avp.service.archivage.DraftService;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -42,7 +43,11 @@ public class TestDraftService {
 		input.clear();
 
 		// Input empty
-		draftService.deleteDraft(input);
+		try {
+			draftService.deleteDraft(input);
+		} catch (AvpExploitException e) {
+			assertEquals(AvpExploitExceptionCode.DRAFT_DELETE_ERROR, e.getCodeErreur());
+		}
 
 		// Doc list
 		input.put("idlist", UUID.randomUUID().toString() + " , " + UUID.randomUUID());
@@ -56,10 +61,13 @@ public class TestDraftService {
 
 	@Test
 	public void refus_draft() throws AvpExploitException {
+		// input lacks document info
 		input.clear();
-
-		draftService.refusDraft(input);
-
+		try {
+			draftService.refusDraft(input);
+		} catch (AvpExploitException e) {
+			assertEquals(AvpExploitExceptionCode.DRAFT_REFUSE_ERROR, e.getCodeErreur());
+		}
 		// Doc list
 		input.put("idlist", UUID.randomUUID().toString() + " , " + UUID.randomUUID());
 		draftService.refusDraft(input);
@@ -74,26 +82,28 @@ public class TestDraftService {
 	@Test
 	public void update_draft() throws AvpExploitException {
 		input.clear();
-		
+
 		input.put("docid", UUID.randomUUID().toString());
 		draftService.updateDraft(input);
 
 		// Doc list
 		input.put("idlist", UUID.randomUUID().toString() + " , " + UUID.randomUUID());
 		draftService.updateDraft(input);
-		
+
 		verify(draftDao, times(3)).mapValues(any(Draft.class), eq(input));
 		verify(draftDao, times(2)).saveAll(anyList());
-		
-		
+
 	}
-	
+
 	@Test
 	public void valide_draft() throws AvpExploitException {
 		input.clear();
-
-		draftService.valideDraft(input);
-
+		try {
+			draftService.valideDraft(input);
+		} catch (AvpExploitException e) {
+			assertEquals(AvpExploitExceptionCode.DRAFT_SAVE_ERROR, e.getCodeErreur());
+		}
+		
 		// Doc list
 		input.put("idlist", UUID.randomUUID().toString() + " , " + UUID.randomUUID());
 		draftService.valideDraft(input);
@@ -104,52 +114,52 @@ public class TestDraftService {
 		verify(draftDao, times(2)).findAllByDocId(anyList());
 		verify(draftDao, times(2)).saveAll(anyList());
 	}
-	
+
 	@Test
 	public void get_draft_info() throws AvpExploitException {
 		Draft draft = new Draft();
 		draft.setDocId(UUID.randomUUID());
-		
+
 		when(draftDao.get(draft.getDocId())).thenReturn(draft);
 		draftService.getDraftInfo(draft.getDocId(), new HashMap<>());
-		
+
 		verify(draftDao).get(draft.getDocId());
 	}
-	
+
 	@Test
 	public void read_draft() throws AvpExploitException {
 		Draft draft = new Draft();
 		draft.setDocId(UUID.randomUUID());
 		draft.setTitle("TestTitle");
 		draft.setContentType("PDF");
-		
+
 		input.clear();
 		input.put("docid", draft.getDocId().toString());
 		input.put("getAsPdf", "true");
-		
+
 		when(draftDao.get(draft.getDocId())).thenReturn(draft);
 		final Map<String, Object> resultat = new HashMap<>();
 		draftService.readDraft(input, resultat);
-		
+
 		assertNull(resultat.get("content_type"));
 		assertEquals(draft.getTitle(), (String) resultat.get("title"));
 		assertEquals(0, (int) resultat.get("content_length"));
-		
+
 		verify(draftDao).get(draft.getDocId());
 	}
-	
+
 	@Test
 	public void draft_store() throws AvpExploitException {
-//		input.clear();
-//		input.put("title", "TestTile.txt");
-//		input.put("content", "Test content".getBytes());
-//		
-//		final Map<String, Object> resultat = new HashMap<>();
-//		draftService.draftStore(input, resultat);
-//		
-//		assertTrue(resultat.isEmpty());
-//		
-//		verify(draftDao).saveDraft(any(Draft.class));
+		// input.clear();
+		// input.put("title", "TestTile.txt");
+		// input.put("content", "Test content".getBytes());
+		//
+		// final Map<String, Object> resultat = new HashMap<>();
+		// draftService.draftStore(input, resultat);
+		//
+		// assertTrue(resultat.isEmpty());
+		//
+		// verify(draftDao).saveDraft(any(Draft.class));
 	}
-	
+
 }
