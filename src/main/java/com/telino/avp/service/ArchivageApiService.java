@@ -297,7 +297,8 @@ public class ArchivageApiService {
 			break;
 
 		case VALIDATION_COMMUNICATION:
-			Communication comToBeValided = comAndRestService.findByComId(UUID.fromString(""));
+			Communication comToBeValided = comAndRestService
+					.findByComId(UUID.fromString((String) input.get("communicationid")));
 			comAndRestService.validationCommunication(comToBeValided);
 			break;
 
@@ -305,9 +306,9 @@ public class ArchivageApiService {
 			Restitution valideResitution = comAndRestService.validationRestitution(input, resultat);
 			// Sinc the save above re-persist the documents restaured (delete), we need to
 			// re-delete them from DB
-			documentService.deleteMetaData(valideResitution.getRestitutionList().stream()
-					.filter(RestitutionList::isRestitue)
-					.map(RestitutionList::getDocument).collect(Collectors.toList()));
+			documentService
+					.deleteMetaData(valideResitution.getRestitutionList().stream().filter(RestitutionList::isRestitue)
+							.map(RestitutionList::getDocument).collect(Collectors.toList()));
 			break;
 
 		default:
