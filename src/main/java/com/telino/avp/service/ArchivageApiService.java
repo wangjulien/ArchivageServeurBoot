@@ -152,15 +152,18 @@ public class ArchivageApiService {
 			break;
 
 		case COMMUNICATION:
-			comAndRestService.communication(input);
+			comAndRestService.communication(input, resultat);
 			break;
 
 		case COMMUNICATION_VALIDATED:
 
 			// First create the communication
-			Communication communication = comAndRestService.communication(input);
-			// add than validate it
-			comAndRestService.validationCommunication(communication);
+			Communication communication = comAndRestService.communication(input, resultat);
+
+			if (Objects.nonNull(communication)) {
+				// add than validate it
+				comAndRestService.validationCommunication(communication);
+			}
 			break;
 
 		case CREATE_LOG_CHECK:

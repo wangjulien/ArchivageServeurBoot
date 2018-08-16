@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -32,6 +33,7 @@ import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.archive.Restitution;
 import com.telino.avp.entity.archive.RestitutionList;
 import com.telino.avp.entity.auxil.LogArchive;
+import com.telino.avp.entity.context.ParRight;
 import com.telino.avp.exception.AvpDaoException;
 import com.telino.avp.exception.AvpExploitException;
 import com.telino.avp.exception.AvpExploitExceptionCode;
@@ -167,20 +169,14 @@ public class ComAndRestService {
 	 * @param input
 	 * @return
 	 */
-	public Communication communication(final Map<String, Object> input) throws AvpExploitException {
-
+	public Communication communication(final Map<String, Object> input, final Map<String, Object> resultat)
+			throws AvpExploitException {
+		//
 		// If the user can communication a batch of docs
-		final String userId = (String) input.get("user");
+		if (!isAllDocAllowed(input, resultat, ParRight::isParCanCommunicate))
+			return null;
 
-		// TODO : !!! Droit de communication par list de document
-		// if
-		// (!userProfileRightService.canDoThePredict(doc.getParRights().getProfile().getParId(),
-		// userId, ParRight::isParCanCommunicate)) {
-		// resultat.put("codeRetour", "1");
-		// resultat.put("message", "Opération non autorisée");
-		// return null;
-		// }
-
+		// Form the SQL Request
 		// get file list
 		String request = (String) input.get("sqlRequest");
 		// remove order by
@@ -374,7 +370,12 @@ public class ComAndRestService {
 	 */
 	public void restitute(final Map<String, Object> input, final Map<String, Object> resultat)
 			throws AvpExploitException {
+		//
+		// If the user can communication a batch of docs
+		if (!isAllDocAllowed(input, resultat, ParRight::isParCanRestitute))
+			return;
 
+		// Form SQL request
 		// get file list
 		String request = (String) input.get("sqlRequest");
 		// remove order by
@@ -507,5 +508,33 @@ public class ComAndRestService {
 	private String addApost(String docIdList) {
 		return Arrays.asList(docIdList.replaceAll("\\s", "").split(",")).stream()
 				.collect(Collectors.joining("','", "'", "'"));
+	}
+
+	private boolean isAllDocAllowed(final Map<String, Object> input, final Map<String, Object> resultat,
+			final Predicate<ParRight> predicate) {
+		//
+		// If the user can communication a batch of docs
+		//
+		final String userId = (String) input.get("user");
+
+		if (Objects.nonNull(input.get("idlist")) && !input.get("idlist").toString().isEmpty()) {
+			// a list of drafts separated by ','
+			List<UUID> docIds = Arrays.asList((input.get("idlist").toString().replaceAll("\\s", "").split(",")))
+					.stream().map(UUID::fromString).collect(Collectors.toList());
+
+			// Filter the docs do not have profil corresponds user's Par-right
+			List<UUID> docNotAllowed = documentDao.findAllByDocIdIn(docIds).stream().filter(
+					doc -> !userProfileRightService.canDoThePredict(doc.getProfile().getParId(), userId, predicate))
+					.map(Document::getDocId).collect(Collectors.toList());
+
+			// If there is, return information to the user
+			if (!docNotAllowed.isEmpty()) {
+				resultat.put("codeRetour", "1");
+				resultat.put("message", "Opération non autorisée for document : " + docNotAllowed);
+				return false;
+			}
+		}
+
+		return true;
 	}
 }
