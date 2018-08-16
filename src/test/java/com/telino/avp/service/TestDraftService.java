@@ -90,7 +90,6 @@ public class TestDraftService {
 		input.put("idlist", UUID.randomUUID().toString() + " , " + UUID.randomUUID());
 		draftService.updateDraft(input);
 
-		verify(draftDao, times(3)).mapValues(any(Draft.class), eq(input));
 		verify(draftDao, times(2)).saveAll(anyList());
 
 	}
