@@ -119,8 +119,7 @@ public class JournalEventService extends AbstractJournalService {
 			logEvent.setArchive(documentDao.get(UUID.fromString(input.get("archiveid").toString()), false));
 		}
 		if (input.get("journalid") != null) {
-			logEvent.setLogArchive(
-					logArchiveDao.findLogArchiveById(UUID.fromString(input.get("journalid").toString())));
+			logEvent.setJournalId(UUID.fromString(input.get("journalid").toString()));
 		}
 		if (input.get("trace") != null) {
 			logEvent.setTrace((String) input.get("trace"));

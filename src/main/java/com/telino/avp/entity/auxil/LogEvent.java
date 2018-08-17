@@ -1,5 +1,6 @@
 package com.telino.avp.entity.auxil;
 
+import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -42,9 +43,8 @@ public class LogEvent extends Journal {
 	@JoinColumn(name = "archiveid")
 	private Document archive;
 
-	@OneToOne
-	@JoinColumn(name = "journalid")
-	private LogArchive logArchive;
+	@Column(name = "journalid")
+	private UUID journalId;
 
 	@Column(name = "customer_name")
 	private String customerName;
@@ -170,17 +170,13 @@ public class LogEvent extends Journal {
 	public void setStatExp(LogEventState statExp) {
 		this.statExp = statExp;
 	}
-
-	public LogArchive getLogArchive() {
-		return logArchive;
-	}
-
+	
 	public UUID getJournalId() {
-		return Objects.isNull(logArchive) ? null : logArchive.getLogId();
+		return journalId;
 	}
 
-	public void setLogArchive(LogArchive logArchive) {
-		this.logArchive = logArchive;
+	public void setJournalId(UUID journalId) {
+		this.journalId = journalId;
 	}
 
 	public String getDetail() {
@@ -203,7 +199,7 @@ public class LogEvent extends Journal {
 		sb.append(operateur);
 		sb.append(versionProcessus);
 		sb.append(logType);
-		sb.append(Objects.isNull(timestampTokenBytes) ? "" : timestampTokenBytes.toString());
+		sb.append(Objects.isNull(timestampTokenBytes) ? "" : Base64.getEncoder().encodeToString(timestampTokenBytes));
 
 		return sb.toString();
 	}

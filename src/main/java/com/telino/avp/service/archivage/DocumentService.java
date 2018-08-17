@@ -245,7 +245,7 @@ public class DocumentService {
 				logEvent.setVersionProcessus((String) input.get("version"));
 				logEvent.setAction(e.getAction());
 				logEvent.setLogType(LogEventType.C.toString());
-				logEvent.setLogArchive(log);
+				logEvent.setJournalId(log.getLogId());
 				logEvent.setMethode(e.getMethodName());
 				logEvent.setDetail(e.getCodeErreur().getInternalDetail());
 				logEvent.setTrace(e.getMessage() + "." + Arrays.toString(e.getStackTrace()));
@@ -266,7 +266,7 @@ public class DocumentService {
 				logEvent.setVersionProcessus((String) input.get("version"));
 				logEvent.setLogType(LogEventType.C.toString());
 				logEvent.setDetail(e.getMessage());
-				logEvent.setLogArchive(log);
+				logEvent.setJournalId(log.getLogId());
 				logEvent.setTrace(e.getMessage() + "." + Arrays.toString(e.getStackTrace()));
 
 				try {
