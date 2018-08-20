@@ -11,8 +11,6 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,8 +32,6 @@ import com.telino.avp.utils.Sha;
 
 @Service
 public class UserProfileRightService {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(UserProfileRightService.class);
 
 	@Autowired
 	private UserDao userDao;
@@ -212,7 +208,7 @@ public class UserProfileRightService {
 				return;
 			}
 		}
-		
+
 		// Save the second server Password
 		if (ServerProc.password2 == null && input.get("password2") != null) {
 			String password2 = (String) input.get("password2");

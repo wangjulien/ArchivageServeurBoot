@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.telino.avp.dao.DocumentDao;
-import com.telino.avp.dao.LogArchiveDao;
 import com.telino.avp.dao.LogEventDao;
 import com.telino.avp.entity.archive.Document;
 import com.telino.avp.entity.auxil.Journal;
@@ -36,9 +35,6 @@ public class JournalEventService extends AbstractJournalService {
 
 	@Autowired
 	private LogEventDao logEventDao;
-
-	@Autowired
-	private LogArchiveDao logArchiveDao;
 
 	@Autowired
 	private DocumentDao documentDao;
