@@ -82,7 +82,7 @@ public class ScheduledArchivageAnalysis {
 
 	@Autowired
 	private SwitchDataSourceService switchDataSourceService;
-	
+
 	@Autowired
 	private ExecutorService executorService;
 
@@ -275,59 +275,44 @@ public class ScheduledArchivageAnalysis {
 	}
 
 	/**
-	 * si on est entre 23h-24h, ou une scellement est fait plus d'une heure
+	 * si on est entre 23h-24h, et une scellement est fait plus de 2 heure
 	 * 
 	 * @return
 	 */
 	private boolean toSealLogArchive() {
-		boolean sealedLogLessOneHour = false;
-
-		Optional<LogArchive> logArchiveOpt = logArchiveDao.getLastSealedLog();
-		if (logArchiveOpt.isPresent()) {
-
-			// Is there a LogArchive done less than 1 hour?
-			sealedLogLessOneHour = logArchiveOpt.get().getHorodatage()
-					.isBefore(ZonedDateTime.now().minus(1, ChronoUnit.HOURS));
-		} else {
-			sealedLogLessOneHour = true;
-		}
-
 		LocalTime nowTime = LocalTime.now();
-		if ((nowTime.isBefore(LocalTime.of(23, 59)) && nowTime.isAfter(LocalTime.of(23, 00))) || sealedLogLessOneHour) {
-			return true;
-		} else {
-			if (logArchiveOpt.isPresent())
-				LOGGER.info("Scellement du journal existe déjà : logid = " + logArchiveOpt.get().getLogId());
-			return false;
+
+		// The sealing only runs between 23-24h
+		if (nowTime.isAfter(LocalTime.of(23, 00, 00)) && nowTime.isBefore(LocalTime.of(23, 59, 59))) {
+			// Is there a LogArchive done less than 2 hour?
+			Optional<LogArchive> logArchiveOpt = logArchiveDao.getLastSealedLog();
+			if (logArchiveOpt.isPresent()) {
+				return logArchiveOpt.get().getHorodatage().isBefore(ZonedDateTime.now().minus(2, ChronoUnit.HOURS));
+			}
 		}
+
+		return false;
 	}
 
 	/**
-	 * si on est entre 23h-24h, ou une scellement est fait plus d'une heure
+	 * si on est entre 23h-24h, et une scellement est fait plus de 2 heure
 	 * 
 	 * @return
 	 */
 	private boolean toSealLogEvent() {
-		boolean sealedLogLessOneHour = false;
-
-		Optional<LogEvent> logEventOpt = logEventDao.getLastSealedLog();
-		if (logEventOpt.isPresent()) {
-
-			// Is there a LogArchive done less than 1 hour?
-			sealedLogLessOneHour = logEventOpt.get().getHorodatage()
-					.isBefore(ZonedDateTime.now().minus(1, ChronoUnit.HOURS));
-		} else {
-			sealedLogLessOneHour = true;
-		}
-
 		LocalTime nowTime = LocalTime.now();
-		if ((nowTime.isBefore(LocalTime.of(23, 59)) && nowTime.isAfter(LocalTime.of(23, 00))) || sealedLogLessOneHour) {
-			return true;
-		} else {
-			if (logEventOpt.isPresent())
-				LOGGER.info("Scellement du journal existe déjà : logid = " + logEventOpt.get().getLogId());
-			return false;
+		
+		// The sealing only runs between 23-24h
+		if (nowTime.isAfter(LocalTime.of(23, 00, 00)) && nowTime.isBefore(LocalTime.of(23, 59, 59))) {
+			Optional<LogEvent> logEventOpt = logEventDao.getLastSealedLog();
+			if (logEventOpt.isPresent()) {
+
+				// Is there a LogArchive done less than 1 hour?
+				return logEventOpt.get().getHorodatage().isBefore(ZonedDateTime.now().minus(2, ChronoUnit.HOURS));
+			}
 		}
+
+		return false;
 	}
 
 	/**
@@ -469,7 +454,7 @@ public class ScheduledArchivageAnalysis {
 			LOGGER.error("Erreur lors de l'execution des threads - interrompue ou échouée" + e.getMessage());
 			allThreadOk = false;
 		}
-		
+
 		return allThreadOk;
 	}
 

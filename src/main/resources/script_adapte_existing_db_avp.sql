@@ -5,7 +5,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 /* 									  */
 DROP VIEW getkeywords;
 
-DROP FUNCTION getar_profiles, getformatted_write_profiles(text), getformatted_write_profiles(text, integer);
+DROP FUNCTION getar_profiles(text);
+DROP FUNCTION getformatted_write_profiles(text); 
+DROP FUNCTION getformatted_write_profiles(text, integer);
 
 /*
 -- Document
@@ -229,6 +231,36 @@ ALTER TABLE secret_key RENAME COLUMN uuid_id TO keyid;
 ALTER TABLE secret_key ADD PRIMARY KEY (keyid);
 
 ALTER TABLE chiffrement ADD CONSTRAINT fk_keyid FOREIGN KEY (idcrypkey) REFERENCES secret_key(keyid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- ExpTask
+-- 
+ALTER TABLE exp_task ADD COLUMN uuid_id UUID DEFAULT uuid_generate_v4();
+
+-- task_id in exp_comments
+ALTER TABLE exp_comments ADD COLUMN uuid_task_id UUID DEFAULT null;
+UPDATE exp_comments d set uuid_task_id = p.uuid_id FROM exp_task p WHERE d.task_id = p.taskid;
+ALTER TABLE exp_comments DROP COLUMN task_id;
+ALTER TABLE exp_comments RENAME COLUMN uuid_task_id TO task_id;
+
+-- Change PK
+ALTER TABLE exp_task DROP COLUMN taskid;
+ALTER TABLE exp_task RENAME COLUMN uuid_id TO taskid;
+ALTER TABLE exp_task ADD PRIMARY KEY (taskid);
+
+ALTER TABLE exp_comments ADD CONSTRAINT fk_taskid FOREIGN KEY (task_id) REFERENCES exp_task(taskid) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- ExpComments
+-- 
+ALTER TABLE exp_comments ADD COLUMN uuid_id UUID DEFAULT uuid_generate_v4();
+
+-- Change PK
+ALTER TABLE exp_comments DROP COLUMN comid;
+ALTER TABLE exp_comments RENAME COLUMN uuid_id TO comid;
+ALTER TABLE exp_comments ADD PRIMARY KEY (comid);
 
 
 /* 									  */
